@@ -1,0 +1,95 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // --- FUNCIONES DE AYUDA ---
+    
+    function getUserData() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+    }
+    
+    function isAdmin() {
+      return getUserData().role == 'admin';
+    }
+    
+    function isContabilidad() {
+      return getUserData().role == 'contabilidad' || isAdmin();
+    }
+    
+    function isVendedor() {
+      return getUserData().role == 'vendedor' || isAdmin();
+    }
+    
+    function isActive() {
+      return request.auth != null && getUserData().status == 'active';
+    }
+
+    // --- REGLAS POR COLECCIÓN ---
+
+    // 1. USUARIOS
+    match /users/{userId} {
+      allow create: if request.auth != null && request.auth.uid == userId;
+      allow read: if request.auth != null; 
+      allow update, delete: if isAdmin();
+    }
+
+    // 2. INVENTARIO & PROVEEDORES
+    match /inventory/{itemId} {
+      allow read: if isActive();
+      allow write: if isContabilidad() || isVendedor(); // Vendedor necesita descontar stock (update)
+    }
+    match /suppliers/{supId} {
+      allow read: if isActive();
+      allow write: if isContabilidad();
+    }
+
+    // 3. COMPRAS & GASTOS
+    match /purchases/{docId} {
+      allow read, write: if isContabilidad();
+    }
+    match /expenses/{docId} {
+      allow read, write: if isContabilidad();
+    }
+
+    // 4. CLIENTES
+    match /clients/{clientId} {
+      allow read: if isActive();
+      allow write: if isVendedor();
+    }
+
+    // 5. ÓRDENES DE PRODUCCIÓN
+    match /orders/{orderId} {
+      allow read: if isActive();
+      allow create: if isVendedor();
+      allow update: if isActive(); 
+      allow delete: if isAdmin();
+    }
+
+    // 6. TRABAJOS EXTERNOS
+    match /external_jobs/{jobId} {
+      allow read: if isActive();
+      allow write: if isContabilidad();
+    }
+
+    // 7. TESORERÍA (CUENTAS) - ¡NUEVO!
+    // Necesario para cargar el select en Órdenes y actualizar saldo al pagar
+    match /accounts/{accountId} {
+      allow read: if isActive(); // Para que el vendedor vea las cuentas en el select
+      allow write: if isContabilidad() || isVendedor(); // Vendedor necesita actualizar saldo (update) al recibir anticipo
+    }
+
+    // 8. LOG DE TRANSACCIONES (TESORERÍA)
+    // Se crea automáticamente al mover dinero
+    match /transactions/{txId} {
+      allow read: if isActive(); // Para ver el extracto
+      allow create: if isActive(); // Para registrar movimientos (vendedores u admin)
+    }
+    
+    // 9. AUDITORÍA DE GASTOS BORRADOS (NUEVO)
+    match /audit_deleted_expenses/{logId} {
+      allow read: if isContabilidad(); // Solo contadores ven el log de borrados
+      allow create: if isActive(); // Cualquiera activo puede borrar (y crear el log)
+    }
+
+  }
+}

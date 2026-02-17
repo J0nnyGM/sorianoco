@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soriano | Cargando...</title>
+    <link href="./css/styles.css" rel="stylesheet">
+    <link rel="icon" href="data:,">
+</head>
+<body class="bg-soriano-dark h-screen w-screen flex flex-col items-center justify-center">
+
+    <div class="text-center animate-pulse">
+        <div class="relative inline-block">
+            <img src="./assets/img/logo.jpg" alt="Soriano" class="w-32 h-32 rounded-full border-2 border-soriano-red shadow-[0_0_30px_rgba(206,32,41,0.3)] mb-6 mx-auto">
+            
+            <div class="absolute top-0 left-0 w-32 h-32 border-4 border-transparent border-t-soriano-gold rounded-full animate-spin"></div>
+        </div>
+        
+        <h1 class="text-3xl font-serif text-white tracking-widest mt-4">SORIANO</h1>
+        <p class="text-xs text-gray-500 uppercase mt-2">Verificando credenciales...</p>
+    </div>
+
+    <script type="module">
+        import { auth, onAuthStateChanged } from './js/firebase-init.js';
+
+        // Escuchar el estado de la sesión
+        onAuthStateChanged(auth, (user) => {
+            if (user) {
+                // CASO 1: El usuario ya tiene sesión activa
+                console.log("Usuario detectado. Redirigiendo al Dashboard...");
+                // Pequeña pausa intencional para que se vea el logo (opcional)
+                setTimeout(() => {
+                    window.location.replace('./admin/index.html'); 
+                }, 800);
+            } else {
+                // CASO 2: No hay usuario
+                console.log("No hay sesión. Redirigiendo al Login...");
+                setTimeout(() => {
+                    window.location.replace('./auth/login.html');
+                }, 800);
+            }
+        });
+    </script>
+</body>
+</html>

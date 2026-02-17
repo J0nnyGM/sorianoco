@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soriano | Ficha Cliente</title>
+    <link href="../css/styles.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="icon" href="data:,">
+</head>
+<body class="bg-soriano-dark text-gray-300 font-sans antialiased">
+
+    <div id="app-layout" class="flex h-screen overflow-hidden">
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-soriano-dark p-6 md:p-12 w-full">
+            
+            <a href="clientes.html" class="inline-flex items-center text-gray-500 hover:text-white mb-6 transition">
+                <i class="fas fa-arrow-left mr-2"></i> Volver a Clientes
+            </a>
+
+            <div class="bg-black/40 border border-gray-800 rounded-lg p-6 mb-8 flex flex-col md:flex-row justify-between items-start gap-4">
+                <div>
+                    <h1 class="text-3xl font-serif text-white mb-1" id="viewName">Cargando...</h1>
+                    <p class="text-sm text-gray-500" id="viewIdNum">NIT/CC: -</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-xs uppercase text-gray-500">Total Comprado (Histórico)</p>
+                    <p class="text-2xl font-serif text-soriano-gold" id="viewLtv">$0</p>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+                
+                <div class="lg:col-span-8 space-y-6">
+                    
+                    <form id="measuresForm" class="bg-black/40 border border-gray-800 rounded-lg p-6">
+                        <div class="flex justify-between items-center mb-6 border-b border-gray-800 pb-2">
+                            <h3 class="text-lg font-serif text-white">Ficha de Medidas Corporales</h3>
+                            <button type="submit" class="btn-primary text-xs px-3 py-2">
+                                <i class="fas fa-save mr-1"></i> Guardar Cambios
+                            </button>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                            
+                            <div class="bg-gray-900/50 p-4 rounded border border-gray-700/50">
+                                <h4 class="text-xs font-bold text-soriano-gold uppercase mb-3 border-b border-gray-700 pb-1">Chaqueta</h4>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <input type="number" id="chk_pecho" class="input-soriano text-center" placeholder="Pecho">
+                                    <input type="number" id="chk_cintura" class="input-soriano text-center" placeholder="Cintura">
+                                    <input type="number" id="chk_espalda" class="input-soriano text-center" placeholder="Espalda">
+                                    <input type="number" id="chk_manga" class="input-soriano text-center" placeholder="Manga">
+                                    <input type="number" id="chk_hombro" class="input-soriano text-center" placeholder="Hombro">
+                                    <input type="number" id="chk_contorno" class="input-soriano text-center" placeholder="Contorno">
+                                </div>
+                            </div>
+
+                            <div class="bg-gray-900/50 p-4 rounded border border-gray-700/50">
+                                <h4 class="text-xs font-bold text-soriano-gold uppercase mb-3 border-b border-gray-700 pb-1">Pantalón</h4>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <input type="number" id="pan_cintura" class="input-soriano text-center" placeholder="Cintura">
+                                    <input type="number" id="pan_base" class="input-soriano text-center" placeholder="Base">
+                                    <input type="number" id="pan_pierna" class="input-soriano text-center" placeholder="Pierna">
+                                    <input type="number" id="pan_largo" class="input-soriano text-center" placeholder="Largo">
+                                    <input type="number" id="pan_entube" class="input-soriano text-center" placeholder="Entube">
+                                </div>
+                            </div>
+
+                            <div class="bg-gray-900/50 p-4 rounded border border-gray-700/50">
+                                <h4 class="text-xs font-bold text-soriano-gold uppercase mb-3 border-b border-gray-700 pb-1">Camisa</h4>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <input type="number" id="cam_cuello" class="input-soriano text-center" placeholder="Cuello">
+                                    <input type="number" id="cam_manga" class="input-soriano text-center" placeholder="Manga">
+                                    <input type="number" id="cam_largo" class="input-soriano text-center" placeholder="Largo">
+                                    <input type="text" id="cam_modelo" class="input-soriano text-xs col-span-1" placeholder="Modelo Preferido">
+                                </div>
+                            </div>
+
+                            <div class="bg-gray-900/50 p-4 rounded border border-gray-700/50">
+                                <h4 class="text-xs font-bold text-soriano-gold uppercase mb-3 border-b border-gray-700 pb-1">Chaleco</h4>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <input type="number" id="cha_pecho" class="input-soriano text-center" placeholder="Pecho">
+                                    <input type="number" id="cha_hombro" class="input-soriano text-center" placeholder="Hombro">
+                                    <input type="number" id="cha_contorno" class="input-soriano text-center" placeholder="Contorno">
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-4">
+                            <label class="block text-xs text-gray-400 mb-1 uppercase">Observaciones Generales (Fisionomía)</label>
+                            <textarea id="clientNotes" rows="3" class="input-soriano w-full font-mono text-sm" placeholder="Ej: Hombro derecho caído, postura encorvada..."></textarea>
+                        </div>
+                    </form>
+
+                </div>
+
+                <div class="lg:col-span-4 space-y-6">
+                    
+                    <div class="bg-black/40 border border-gray-800 rounded-lg p-6">
+                        <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4">Historial de Órdenes</h3>
+                        <div id="ordersHistoryList" class="space-y-3 max-h-[400px] overflow-y-auto custom-scrollbar">
+                            <p class="text-xs text-gray-500 text-center py-4">Cargando historial...</p>
+                        </div>
+                    </div>
+
+                    <div class="bg-black/40 border border-gray-800 rounded-lg p-6">
+                        <h3 class="text-sm font-bold text-white uppercase tracking-wide mb-4">Contacto</h3>
+                        <div class="space-y-3 text-sm">
+                            <div><label class="text-gray-500 text-xs block">Teléfono</label><input type="text" id="viewPhone" class="bg-transparent border-b border-gray-700 text-white w-full focus:outline-none focus:border-soriano-gold py-1"></div>
+                            <div><label class="text-gray-500 text-xs block">Email</label><input type="text" id="viewEmail" class="bg-transparent border-b border-gray-700 text-white w-full focus:outline-none focus:border-soriano-gold py-1"></div>
+                            <div><label class="text-gray-500 text-xs block">Dirección</label><input type="text" id="viewAddress" class="bg-transparent border-b border-gray-700 text-white w-full focus:outline-none focus:border-soriano-gold py-1"></div>
+                        </div>
+                        <button id="saveContactBtn" class="mt-4 w-full btn-outline text-xs">Actualizar Contacto</button>
+                    </div>
+
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { initAdminLayout } from '../js/global-components.js';
+        initAdminLayout('clientes'); 
+        import './cliente-detalle.js'; 
+    </script>
+</body>
+</html>

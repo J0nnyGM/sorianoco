@@ -1,0 +1,703 @@
+import { auth, db, onAuthStateChanged } from '../js/firebase-init.js';
+import { collection, doc, query, orderBy, where, getDocs, limit, startAfter, startAt, endBefore, serverTimestamp, writeBatch, increment, arrayUnion, runTransaction, getDoc, deleteDoc, updateDoc } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+import { updateSidebarUser } from '../js/global-components.js';
+
+// --- DOM ELEMENTS ---
+const ordersGrid = document.getElementById('ordersGrid');
+const searchInput = document.getElementById('searchInput');
+const prevPageBtn = document.getElementById('prevPageBtn');
+const nextPageBtn = document.getElementById('nextPageBtn');
+const pageIndicator = document.getElementById('pageIndicator');
+
+// Modal Nueva Orden
+const modal = document.getElementById('orderModal');
+const modalTitle = document.getElementById('modalTitle');
+const orderIdInput = document.getElementById('orderId');
+const clientSelect = document.getElementById('clientSelect');
+const clientInfoBox = document.getElementById('clientInfoBox');
+const deadlineInput = document.getElementById('deadline');
+const statusInput = document.getElementById('status');
+const orderNotesInput = document.getElementById('orderNotes');
+
+// Buscador Inventario
+const inventorySearch = document.getElementById('inventorySearch');
+const inventoryList = document.getElementById('inventoryList');
+const selectedInventoryId = document.getElementById('selectedInventoryId');
+const addItemDesc = document.getElementById('addItemDesc');
+const addItemQty = document.getElementById('addItemQty');
+const addItemPrice = document.getElementById('addItemPrice');
+const addItemNotes = document.getElementById('addItemNotes');
+const sizeSelectorContainer = document.getElementById('sizeSelectorContainer');
+const sizeButtons = document.getElementById('sizeButtons');
+const selectedSizeInput = document.getElementById('selectedSize');
+const imgPreviewContainer = document.getElementById('productImagePreview');
+const imgPreviewSrc = document.getElementById('imgPreviewSrc');
+const orderItemsBody = document.getElementById('orderItemsBody');
+const orderTotalDisplay = document.getElementById('orderTotalDisplay');
+const measuresContainer = document.getElementById('measuresContainer');
+const advanceInput = document.getElementById('advancePayment');
+const targetAccountSelect = document.getElementById('targetAccount');
+
+// Modal Pago
+const payModal = document.getElementById('payModal');
+const payForm = document.getElementById('payForm');
+const payOrderId = document.getElementById('payOrderId');
+const payBalanceDisplay = document.getElementById('payBalanceDisplay');
+const payAmount = document.getElementById('payAmount');
+const payAccount = document.getElementById('payAccount');
+const markDelivered = document.getElementById('markDelivered');
+const discountContainer = document.getElementById('discountContainer');
+const discountInput = document.getElementById('discountInput');
+const newBalancePreview = document.getElementById('newBalancePreview');
+
+// --- ESTADO LOCAL ---
+let clientsCache = [];
+let productsCache = [];
+let accountsCache = [];
+let orderItems = [];
+let currentMeasures = {};
+let activeTab = 'chaqueta';
+
+// Estado Paginación
+let currentStatus = 'recibido';
+let currentPage = 1;
+let lastVisibleDoc = null;
+let firstVisibleDoc = null;
+let pageStack = []; 
+
+const copFormatter = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
+
+const measureFields = {
+    chaqueta: ['Pecho', 'Cintura', 'Espalda', 'Manga', 'Hombro', 'Contorno'],
+    pantalon: ['Cintura', 'Base', 'Pierna', 'Largo', 'Entube'],
+    camisa:   ['Cuello', 'Manga', 'Largo', 'Modelo'],
+    chaleco:  ['Pecho', 'Hombro', 'Contorno']
+};
+
+const nextStatusMap = {
+    'recibido': 'en_proceso',
+    'en_proceso': 'procesado',
+    'procesado': 'entregado',
+    'entregado': null
+};
+
+const statusLabels = {
+    'recibido': 'Recibido',
+    'en_proceso': 'En Proceso',
+    'procesado': 'Procesado',
+    'entregado': 'Entregado',
+    'anulada': 'Anulada'
+};
+
+const statusColors = {
+    'recibido': 'bg-gray-800 border-gray-600 text-gray-300',
+    'en_proceso': 'bg-blue-900/20 border-blue-900 text-blue-400',
+    'procesado': 'bg-purple-900/20 border-purple-900 text-purple-400',
+    'entregado': 'bg-green-900/20 border-green-900 text-green-400',
+    'anulada': 'bg-red-900/20 border-red-900 text-red-400'
+};
+
+// --- 1. INICIALIZACIÓN ---
+onAuthStateChanged(auth, async (user) => {
+    if (!user) { window.location.href = '../auth/login.html'; return; }
+    
+    import("https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js")
+        .then(({ getDoc }) => getDoc(doc(db, "users", user.uid)))
+        .then(snap => { if(snap.exists()) updateSidebarUser(user, snap.data()) });
+
+    await Promise.all([loadClients(), loadInventoryProducts(), loadAccounts()]);
+    filterByStatus('recibido');
+});
+
+// --- 2. SISTEMA DE FILTROS Y CARGA ---
+window.filterByStatus = (status) => {
+    currentStatus = status;
+    searchInput.value = "";
+    
+    document.querySelectorAll('.status-tab').forEach(btn => {
+        if(btn.dataset.status === status) {
+            btn.className = "status-tab active px-4 py-2 rounded-full text-xs font-bold uppercase transition bg-gray-800 text-white border border-gray-600";
+        } else {
+            btn.className = "status-tab px-4 py-2 rounded-full text-xs font-bold uppercase transition text-gray-500 hover:text-white";
+        }
+    });
+
+    loadOrders('reset');
+};
+
+nextPageBtn.addEventListener('click', () => loadOrders('next'));
+prevPageBtn.addEventListener('click', () => loadOrders('prev'));
+
+let timeout = null;
+searchInput.addEventListener('input', () => {
+    clearTimeout(timeout);
+    timeout = setTimeout(() => loadOrders('search'), 500);
+});
+
+async function loadOrders(action) {
+    ordersGrid.innerHTML = `<div class="col-span-full py-12 text-center text-gray-500"><i class="fas fa-circle-notch fa-spin mr-2"></i> Cargando...</div>`;
+    
+    const searchTerm = searchInput.value.trim();
+    let q;
+
+    try {
+        if (searchTerm) {
+            const isNumber = /^\d+$/.test(searchTerm);
+            if (isNumber) {
+                const num = parseInt(searchTerm);
+                q = query(collection(db, "orders"), where("orderNumber", "==", num));
+            } else {
+                q = query(
+                    collection(db, "orders"), 
+                    where("clientName", ">=", searchTerm),
+                    where("clientName", "<=", searchTerm + '\uf8ff'),
+                    limit(30)
+                );
+            }
+            prevPageBtn.disabled = true;
+            nextPageBtn.disabled = true;
+            pageIndicator.textContent = "Resultados búsqueda";
+
+        } else {
+            let baseQuery = query(
+                collection(db, "orders"), 
+                where("status", "==", currentStatus),
+                orderBy("createdAt", "desc"),
+                limit(30)
+            );
+
+            if (action === 'reset' || action === 'search') {
+                currentPage = 1;
+                pageStack = [];
+                q = baseQuery;
+            } else if (action === 'next' && lastVisibleDoc) {
+                pageStack.push(firstVisibleDoc);
+                q = query(baseQuery, startAfter(lastVisibleDoc));
+                currentPage++;
+            } else if (action === 'prev' && pageStack.length > 0) {
+                const prevDoc = pageStack.pop();
+                q = query(baseQuery, startAt(prevDoc));
+                currentPage--;
+            } else {
+                q = baseQuery;
+            }
+        }
+
+        const snapshot = await getDocs(q);
+
+        if (snapshot.empty) {
+            ordersGrid.innerHTML = `<div class="col-span-full py-12 text-center text-gray-500">No hay órdenes en esta vista.</div>`;
+            nextPageBtn.disabled = true;
+            if (currentPage === 1) prevPageBtn.disabled = true;
+            return;
+        }
+
+        firstVisibleDoc = snapshot.docs[0];
+        lastVisibleDoc = snapshot.docs[snapshot.docs.length - 1];
+
+        renderOrdersGrid(snapshot.docs);
+
+        if (!searchTerm) {
+            pageIndicator.textContent = `Página ${currentPage}`;
+            prevPageBtn.disabled = currentPage === 1;
+            nextPageBtn.disabled = snapshot.docs.length < 30;
+        }
+
+    } catch (error) {
+        console.error("Error cargando órdenes:", error);
+        ordersGrid.innerHTML = `<div class="col-span-full py-12 text-center text-red-500 text-xs">Error de índice. Revise la consola (F12).</div>`;
+    }
+}
+
+// RENDERIZADO TIPO LISTA (TODOS LOS BOTONES VISIBLES)
+function renderOrdersGrid(docs) {
+    ordersGrid.innerHTML = docs.map(doc => {
+        const data = doc.data();
+        
+        // Estilo anulada
+        if (data.status === 'anulada') {
+            return `
+                <div class="bg-red-900/10 border border-red-900/20 rounded-lg p-4 flex items-center justify-between opacity-60">
+                    <div class="flex items-center gap-4">
+                        <span class="font-mono text-red-500 font-bold text-sm">#${data.orderNumber}</span>
+                        <h3 class="text-white font-bold line-through">${data.clientName}</h3>
+                        <span class="px-2 py-0.5 rounded text-[10px] uppercase font-bold bg-red-900/50 text-red-400">Anulada</span>
+                    </div>
+                    <button onclick="window.deleteOrder('${doc.id}')" class="text-gray-500 hover:text-white text-xs"><i class="fas fa-trash"></i></button>
+                </div>
+            `;
+        }
+
+        const items = data.items || [];
+        const totalQty = items.reduce((sum, item) => sum + (parseInt(item.quantity) || 0), 0);
+        let summary = 'Sin items';
+        if (items.length === 1) summary = items[0].description;
+        else if (items.length > 1) summary = `${totalQty} Prendas (Varios)`;
+
+        let phoneDisplay = '';
+        const cachedClient = clientsCache.find(c => c.id === data.clientId);
+        if (cachedClient && cachedClient.phone) {
+            phoneDisplay = `<div class="text-[10px] text-gray-500 mt-0.5"><i class="fas fa-phone mr-1"></i> ${cachedClient.phone}</div>`;
+        }
+
+        const balance = data.balanceDue || 0;
+        const isPaid = balance <= 0;
+        const balanceHtml = !isPaid 
+            ? `<span class="text-red-400 font-bold text-xs">Deben: ${copFormatter.format(balance)}</span>` 
+            : `<span class="text-green-500 font-bold text-[10px] border border-green-500/50 px-2 py-0.5 rounded">PAGADO</span>`;
+
+        const nextStatus = nextStatusMap[data.status];
+        
+        // Botón Avance Estado (Principal)
+        let statusBtn = '';
+        if (nextStatus) {
+            statusBtn = `
+                <button onclick="window.advanceStatus('${doc.id}', '${data.status}')" 
+                    class="h-8 px-3 bg-gray-800 hover:bg-gray-700 text-white text-[10px] rounded border border-gray-600 transition flex items-center gap-1"
+                    title="Avanzar a ${statusLabels[nextStatus]}">
+                    <span>Avanzar</span> <i class="fas fa-arrow-right text-gray-400"></i>
+                </button>
+            `;
+        } else {
+            statusBtn = `<div class="h-8 px-3 flex items-center text-green-500 text-[10px] font-bold border border-transparent"><i class="fas fa-check-circle mr-1"></i> Fin</div>`;
+        }
+
+        // Botón Pago
+        const payBtn = !isPaid 
+            ? `<button onclick="window.openPayModal('${doc.id}', ${balance}, '${data.orderNumber}')" class="w-8 h-8 bg-green-900/20 hover:bg-green-900/40 text-green-400 border border-green-900/50 rounded flex items-center justify-center transition" title="Registrar Pago"><i class="fas fa-dollar-sign"></i></button>` 
+            : ``;
+
+        // Botón Anular
+        const cancelBtn = `<button onclick="window.cancelOrder('${doc.id}', '${data.orderNumber}', ${data.totalAmount - balance})" class="w-8 h-8 text-red-500 hover:bg-red-900/20 rounded flex items-center justify-center transition" title="Anular"><i class="fas fa-ban"></i></button>`;
+
+        // Botones Detalle / Print
+        const viewBtn = `<a href="orden-detalle.html?id=${doc.id}" class="w-8 h-8 text-blue-400 hover:bg-blue-900/20 rounded flex items-center justify-center transition" title="Ver Detalle"><i class="fas fa-eye"></i></a>`;
+        const printBtn = `<a href="remision.html?id=${doc.id}" target="_blank" class="w-8 h-8 text-gray-400 hover:text-white hover:bg-gray-800 rounded flex items-center justify-center transition" title="Imprimir"><i class="fas fa-print"></i></a>`;
+
+        return `
+            <div class="bg-gray-900 border border-gray-800 rounded-lg p-3 flex flex-col md:flex-row items-center gap-4 hover:border-gray-600 transition group">
+                
+                <div class="flex items-center gap-3 w-full md:w-32">
+                    <span class="font-mono text-soriano-gold font-bold text-sm">#${data.orderNumber}</span>
+                    <span class="px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${statusColors[data.status]}">
+                        ${statusLabels[data.status]}
+                    </span>
+                </div>
+
+                <div class="flex-1 w-full md:w-1/4">
+                    <h3 class="text-white font-bold text-sm truncate">${data.clientName}</h3>
+                    ${phoneDisplay}
+                </div>
+
+                <div class="flex-1 w-full md:w-auto hidden md:block">
+                    <p class="text-xs text-gray-400 font-medium truncate"><span class="text-white font-bold">${totalQty}x</span> ${summary}</p>
+                </div>
+
+                <div class="w-full md:w-24 text-right hidden md:block">
+                    <p class="text-[10px] text-gray-500">Entrega</p>
+                    <p class="text-xs text-white font-mono">${data.deadline}</p>
+                </div>
+
+                <div class="w-full md:w-28 text-right flex items-center justify-end">
+                    ${balanceHtml}
+                </div>
+
+                <div class="flex items-center gap-1 w-full md:w-auto justify-end mt-2 md:mt-0 border-t md:border-0 border-gray-800 pt-2 md:pt-0">
+                    ${statusBtn}
+                    ${payBtn}
+                    ${viewBtn}
+                    ${printBtn}
+                    ${cancelBtn}
+                </div>
+            </div>
+        `;
+    }).join('');
+}
+
+// --- 3. LÓGICA DE AVANCE RÁPIDO DE ESTADO ---
+window.advanceStatus = async (id, current) => {
+    const next = nextStatusMap[current];
+    if (!next) return;
+
+    try {
+        await updateDoc(doc(db, "orders", id), { status: next });
+        loadOrders('reset'); 
+    } catch (e) {
+        console.error(e);
+        alert("Error al cambiar estado.");
+    }
+};
+
+// --- CARGAS AUXILIARES ---
+async function loadClients() {
+    const q = query(collection(db, "clients"), orderBy("name"));
+    const snap = await getDocs(q);
+    clientsCache = [];
+    clientSelect.innerHTML = '<option value="">Seleccionar Cliente...</option>';
+    snap.forEach(d => {
+        const c = d.data(); c.id = d.id; clientsCache.push(c);
+        clientSelect.innerHTML += `<option value="${c.id}">${c.name}</option>`;
+    });
+}
+
+async function loadInventoryProducts() {
+    const q = query(collection(db, "inventory"), where("classification", "==", "producto"));
+    const snap = await getDocs(q);
+    productsCache = [];
+    snap.forEach(d => {
+        const p = d.data();
+        p.id = d.id;
+        productsCache.push(p);
+    });
+}
+
+async function loadAccounts() {
+    const q = query(collection(db, "accounts"), where("status", "==", "active"), orderBy("name"));
+    const snap = await getDocs(q);
+    accountsCache = [];
+    const options = '<option value="">Seleccionar cuenta...</option>' + 
+        snap.docs.map(doc => {
+            const acc = doc.data(); acc.id = doc.id; accountsCache.push(acc);
+            return `<option value="${doc.id}">${acc.name} (${acc.type})</option>`;
+        }).join('');
+    targetAccountSelect.innerHTML = options;
+    payAccount.innerHTML = options;
+}
+
+// --- PAGOS & DESCUENTOS ---
+window.openPayModal = (id, balance, number) => {
+    payForm.reset();
+    discountContainer.classList.add('hidden'); 
+    payOrderId.value = id;
+    
+    payBalanceDisplay.dataset.val = balance; 
+    payBalanceDisplay.textContent = copFormatter.format(balance);
+    document.getElementById('payModalSubtitle').textContent = `Orden #${number}`;
+    
+    payAmount.value = copFormatter.format(balance);
+    markDelivered.checked = true; 
+    payModal.classList.remove('hidden'); payModal.classList.add('flex');
+};
+
+window.toggleDiscount = () => {
+    discountContainer.classList.toggle('hidden');
+    discountInput.value = "";
+    newBalancePreview.textContent = "-";
+};
+
+window.calculateFinalPayment = (input) => {
+    const discount = parseInt(input.value.replace(/\D/g, '')) || 0;
+    const currentDebt = parseInt(payBalanceDisplay.dataset.val);
+    const newDebt = Math.max(0, currentDebt - discount);
+    newBalancePreview.textContent = copFormatter.format(newDebt);
+    payAmount.value = copFormatter.format(newDebt); 
+    formatCurrencyInput(input);
+};
+
+payForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    const id = payOrderId.value;
+    const rawAmt = payAmount.value.replace(/\D/g, '');
+    const amount = parseInt(rawAmt) || 0;
+    const rawDisc = discountInput.value.replace(/\D/g, '');
+    const discount = parseInt(rawDisc) || 0;
+    const accId = payAccount.value;
+    const currentDebt = parseInt(payBalanceDisplay.dataset.val);
+
+    if (amount < 0) return;
+    if (amount > 0 && !accId) { alert("Seleccione cuenta."); return; }
+    if ((amount + discount) > currentDebt) { alert("Pago + Descuento exceden deuda."); return; }
+
+    if(!confirm(`¿Confirmar transacción?`)) return;
+
+    try {
+        const batch = writeBatch(db);
+        const orderRef = doc(db, "orders", id);
+        const accRef = doc(db, "accounts", accId);
+
+        if (discount > 0) {
+            batch.update(orderRef, {
+                totalAmount: increment(-discount),
+                balanceDue: increment(-discount),
+                discountApplied: discount
+            });
+        }
+
+        if (amount > 0) {
+            const updateData = {
+                balanceDue: increment(-amount), 
+                paymentHistory: arrayUnion({
+                    amount: amount,
+                    accountId: accId,
+                    date: new Date().toISOString(),
+                    type: 'balance_payment'
+                }),
+                updatedAt: serverTimestamp()
+            };
+            if (markDelivered.checked) updateData.status = 'entregado';
+            
+            batch.update(orderRef, updateData);
+            batch.update(accRef, { balance: increment(amount) });
+            batch.set(doc(collection(db, "transactions")), {
+                accountId: accId, type: 'income', amount, description: `Pago Orden (Cierre)`, relatedDocId: id, date: serverTimestamp()
+            });
+        } else {
+             if (markDelivered.checked) batch.update(orderRef, { status: 'entregado' });
+        }
+
+        await batch.commit();
+        closePayModal();
+        alert("Registrado correctamente.");
+        loadOrders('reset'); 
+
+    } catch (error) {
+        console.error(error);
+        alert("Error al registrar.");
+    }
+});
+
+window.closePayModal = () => { payModal.classList.add('hidden'); payModal.classList.remove('flex'); };
+
+// --- ANULAR ORDEN ---
+window.cancelOrder = async (id, number, paidAmount) => {
+    let msg = `¿ANULAR orden #${number}?`;
+    if (paidAmount > 0) msg += `\n\nATENCIÓN: Se debe devolver ${copFormatter.format(paidAmount)} al cliente.`;
+
+    if (!confirm(msg)) return;
+
+    if (paidAmount > 0) {
+        alert("La orden será ANULADA.\nPor favor registre un GASTO manual por 'Devolución Cliente' para descargar el dinero de la caja.");
+    }
+
+    try {
+        await updateDoc(doc(db, "orders", id), {
+            status: 'anulada',
+            canceledAt: serverTimestamp()
+        });
+        loadOrders('reset');
+        alert("Orden anulada.");
+    } catch (e) {
+        console.error(e);
+        alert("Error al anular.");
+    }
+};
+
+window.deleteOrder = async (id) => { if(confirm("¿Borrar definitivamente?")) { await deleteDoc(doc(db, "orders", id)); loadOrders('reset'); } };
+
+// --- NUEVA ORDEN ---
+inventorySearch.addEventListener('input', () => renderInventoryList(inventorySearch.value));
+inventorySearch.addEventListener('focus', () => renderInventoryList(inventorySearch.value));
+document.addEventListener('click', (e) => {
+    if (!inventorySearch.contains(e.target) && !inventoryList.contains(e.target)) {
+        inventoryList.classList.add('hidden');
+    }
+});
+
+function renderInventoryList(term = '') {
+    inventoryList.innerHTML = '';
+    const lowerTerm = term.toLowerCase();
+
+    const manualDiv = document.createElement('div');
+    manualDiv.className = "px-4 py-3 border-b border-gray-700 bg-gray-800 hover:bg-soriano-gold hover:text-black cursor-pointer transition flex items-center group";
+    manualDiv.innerHTML = `<i class="fas fa-cut mr-2 text-soriano-gold group-hover:text-black"></i> <span class="font-bold">Prenda Sobre Medida (Manual)</span>`;
+    manualDiv.onclick = () => selectProduct(null);
+    inventoryList.appendChild(manualDiv);
+
+    const filtered = productsCache.filter(p => 
+        p.name.toLowerCase().includes(lowerTerm) || 
+        p.sku.toLowerCase().includes(lowerTerm)
+    );
+
+    filtered.forEach(p => {
+        const div = document.createElement('div');
+        div.className = "px-4 py-2 hover:bg-gray-700 cursor-pointer text-sm text-gray-300 border-b border-gray-800 last:border-0";
+        const totalStock = p.sizes ? Object.values(p.sizes).reduce((a,b)=>a+b,0) : (p.quantity || 0);
+        div.innerHTML = `<div class="font-bold text-white">${p.name}</div><div class="text-[10px] text-gray-500 flex justify-between"><span>SKU: ${p.sku}</span><span>Stock: ${totalStock}</span></div>`;
+        div.onclick = () => selectProduct(p);
+        inventoryList.appendChild(div);
+    });
+    inventoryList.classList.remove('hidden');
+}
+
+function selectProduct(product) {
+    inventoryList.classList.add('hidden');
+    selectedSizeInput.value = "";
+    sizeSelectorContainer.classList.add('hidden');
+    sizeButtons.innerHTML = "";
+    imgPreviewContainer.classList.add('hidden');
+    imgPreviewSrc.src = "";
+
+    if (!product) {
+        inventorySearch.value = "Prenda Sobre Medida";
+        selectedInventoryId.value = "";
+        addItemDesc.value = "";
+        addItemDesc.readOnly = false;
+        addItemDesc.placeholder = "Ej. Traje de Novio";
+        addItemDesc.focus();
+        addItemPrice.value = "";
+    } else {
+        inventorySearch.value = product.name;
+        selectedInventoryId.value = product.id;
+        addItemDesc.value = product.name;
+        if (product.cost) addItemPrice.value = new Intl.NumberFormat('es-CO').format(product.cost);
+        if (product.sizes) {
+            sizeSelectorContainer.classList.remove('hidden');
+            let hasStock = false;
+            Object.entries(product.sizes).forEach(([size, qty]) => {
+                if (qty > 0) {
+                    hasStock = true;
+                    const btn = document.createElement('button');
+                    btn.type = "button";
+                    btn.className = "size-btn px-3 py-1 bg-gray-800 border border-gray-600 rounded text-xs text-gray-300 hover:bg-gray-700 hover:text-white transition";
+                    btn.innerHTML = `${size} <span class="text-[9px] text-gray-500 ml-1">(${qty})</span>`;
+                    btn.onclick = () => {
+                        document.querySelectorAll('.size-btn').forEach(b => b.className = "size-btn px-3 py-1 bg-gray-800 border border-gray-600 rounded text-xs text-gray-300");
+                        btn.className = "size-btn px-3 py-1 bg-soriano-red border border-soriano-red rounded text-xs text-white font-bold shadow-lg transform scale-105";
+                        selectedSizeInput.value = size;
+                        addItemDesc.value = `${product.name} (Talla ${size})`;
+                    };
+                    sizeButtons.appendChild(btn);
+                }
+            });
+            if (!hasStock) sizeButtons.innerHTML = '<span class="text-red-500 text-xs">Sin stock físico.</span>';
+        }
+        if(product.imageUrl) { imgPreviewSrc.src = product.imageUrl; imgPreviewContainer.classList.remove('hidden'); imgPreviewSrc.dataset.url = product.imageUrl; } 
+        else { imgPreviewSrc.dataset.url = ""; }
+    }
+}
+
+window.addItemToOrder = () => {
+    const invId = selectedInventoryId.value;
+    const desc = addItemDesc.value;
+    const qty = parseInt(addItemQty.value) || 1;
+    const priceRaw = addItemPrice.value.replace(/\D/g, '');
+    const price = parseInt(priceRaw) || 0;
+    const notes = addItemNotes.value;
+    const size = selectedSizeInput.value;
+    
+    let imgUrl = null;
+    if (invId) { const prod = productsCache.find(p => p.id === invId); if (prod) imgUrl = prod.imageUrl; }
+
+    if (!desc) { alert("Descripción requerida"); return; }
+    if (!price) { alert("Precio requerido"); return; }
+    if (invId && !size) { const prod = productsCache.find(p => p.id === invId); if (prod && prod.sizes && Object.keys(prod.sizes).length > 0) { alert("Seleccione una talla."); return; } }
+
+    orderItems.push({
+        id: Date.now(),
+        inventoryId: invId || null, 
+        description: desc,
+        size: size || "N/A",
+        quantity: qty,
+        unitPrice: price,
+        totalPrice: price * qty,
+        notes: notes,
+        imageUrl: imgUrl
+    });
+
+    inventorySearch.value = ""; selectedInventoryId.value = ""; addItemDesc.value = ""; addItemDesc.readOnly = false; addItemQty.value = "1"; addItemPrice.value = ""; addItemNotes.value = ""; selectedSizeInput.value = ""; sizeSelectorContainer.classList.add('hidden'); sizeButtons.innerHTML = ""; imgPreviewContainer.classList.add('hidden'); imgPreviewSrc.src = "";
+    renderOrderItems();
+};
+
+window.removeOrderItem = (id) => { orderItems = orderItems.filter(i => i.id !== id); renderOrderItems(); };
+
+function renderOrderItems() {
+    if (orderItems.length === 0) { orderItemsBody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-xs text-gray-500">No hay prendas.</td></tr>`; orderTotalDisplay.textContent = "$0"; return; }
+    let total = 0;
+    orderItemsBody.innerHTML = orderItems.map(item => {
+        total += item.totalPrice;
+        const icon = item.inventoryId ? '<i class="fas fa-box text-blue-400" title="De Stock"></i>' : '<i class="fas fa-cut text-soriano-gold" title="Sobre Medida"></i>';
+        return `<tr class="border-b border-gray-800/50 hover:bg-white/5"><td class="p-3 text-center font-bold text-white">${item.quantity}</td><td class="p-3 text-center text-xs">${icon}</td><td class="p-3"><div class="text-white text-sm">${item.description}</div>${item.notes ? `<div class="text-xs text-soriano-gold italic">${item.notes}</div>` : ''}</td><td class="p-3 text-right font-mono text-sm text-gray-400">${copFormatter.format(item.totalPrice)}</td><td class="p-3 text-center"><button onclick="removeOrderItem(${item.id})" class="text-gray-600 hover:text-red-500 transition"><i class="fas fa-times"></i></button></td></tr>`;
+    }).join('');
+    orderTotalDisplay.textContent = copFormatter.format(total);
+}
+
+clientSelect.addEventListener('change', () => {
+    const clientId = clientSelect.value;
+    if (!clientId) { currentMeasures = {}; renderMeasuresInputs(); clientInfoBox.classList.add('hidden'); return; }
+    const client = clientsCache.find(c => c.id === clientId);
+    if (client) { currentMeasures = JSON.parse(JSON.stringify(client.measures || {})); document.getElementById('infoPhone').textContent = client.phone || 'Sin tel'; clientInfoBox.classList.remove('hidden'); renderMeasuresInputs(); }
+});
+
+window.showMeasureTab = (tab) => {
+    activeTab = tab;
+    const buttons = document.querySelectorAll('#measureTabs .measure-tab');
+    buttons.forEach(btn => { if(btn.textContent.trim().toLowerCase() === tab) { btn.className = "measure-tab text-[10px] uppercase px-2 py-1 text-soriano-red border-b-2 border-soriano-red font-bold"; } else { btn.className = "measure-tab text-[10px] uppercase px-2 py-1 text-gray-500 hover:text-white"; } });
+    renderMeasuresInputs();
+};
+
+function renderMeasuresInputs() {
+    const fields = measureFields[activeTab] || [];
+    const prefixMap = { chaqueta: 'chk_', pantalon: 'pan_', camisa: 'cam_', chaleco: 'cha_' };
+    const prefix = prefixMap[activeTab];
+    const storedValues = currentMeasures[activeTab] || {};
+    if (fields.length === 0) { measuresContainer.innerHTML = '<p class="text-xs text-gray-500 col-span-2 text-center">Sin campos.</p>'; return; }
+    measuresContainer.innerHTML = fields.map(field => {
+        const key = prefix + field.toLowerCase(); 
+        const val = storedValues[key] || '';
+        return `<div><label class="block text-[9px] text-gray-500 uppercase">${field}</label><input type="text" class="measure-input input-soriano text-center text-xs py-1 h-7 border-gray-700" data-category="${activeTab}" data-key="${key}" value="${val}" onchange="updateLocalMeasure(this)"></div>`;
+    }).join('');
+}
+
+window.updateLocalMeasure = (input) => { const cat = input.dataset.category; const key = input.dataset.key; if(!currentMeasures[cat]) currentMeasures[cat] = {}; currentMeasures[cat][key] = input.value; };
+
+window.saveOrder = async () => {
+    if (!clientSelect.value) { alert("Seleccione un cliente"); return; }
+    if (orderItems.length === 0) { alert("Agregue prendas"); return; }
+    if (!deadlineInput.value) { alert("Defina fecha entrega"); return; }
+    const rawAdvance = advanceInput.value.replace(/\D/g, '');
+    const advance = parseInt(rawAdvance) || 0;
+    if (advance > 0 && !targetAccountSelect.value) { alert("Seleccione cuenta de destino para el anticipo."); return; }
+    if(!confirm("¿Generar orden?")) return;
+
+    try {
+        await runTransaction(db, async (transaction) => {
+            const isEdit = orderIdInput.value !== "";
+            let orderRef; let orderNumber;
+            const totalAmount = orderItems.reduce((sum, i) => sum + i.totalPrice, 0);
+
+            if (isEdit) { orderRef = doc(db, "orders", orderIdInput.value); } 
+            else {
+                const counterRef = doc(db, "counters", "orders");
+                const counterSnap = await transaction.get(counterRef);
+                let nextId = 1;
+                if (counterSnap.exists()) nextId = counterSnap.data().current + 1;
+                transaction.set(counterRef, { current: nextId }, { merge: true });
+                orderNumber = nextId; orderRef = doc(collection(db, "orders"));
+            }
+
+            const orderData = {
+                clientId: clientSelect.value,
+                clientName: clientSelect.options[clientSelect.selectedIndex].text,
+                deadline: deadlineInput.value,
+                status: statusInput.value,
+                items: orderItems,
+                appliedMeasures: currentMeasures,
+                totalAmount: totalAmount,
+                notes: orderNotesInput.value,
+                updatedAt: serverTimestamp()
+            };
+
+            if (!isEdit) {
+                orderData.createdAt = serverTimestamp();
+                orderData.orderNumber = orderNumber;
+                orderData.advancePayment = advance;
+                orderData.balanceDue = totalAmount - advance;
+                orderData.paymentAccount = targetAccountSelect.value || null;
+                if (advance > 0) orderData.paymentHistory = [{ amount: advance, accountId: targetAccountSelect.value, date: new Date().toISOString(), type: 'advance' }];
+                transaction.set(orderRef, orderData);
+                if (advance > 0) {
+                    const accRef = doc(db, "accounts", targetAccountSelect.value);
+                    transaction.update(accRef, { balance: increment(advance) });
+                    const logRef = doc(collection(db, "transactions"));
+                    transaction.set(logRef, { accountId: targetAccountSelect.value, type: 'income', amount: advance, description: `Anticipo Orden #${orderNumber}`, date: serverTimestamp() });
+                }
+            } else { transaction.update(orderRef, orderData); }
+        });
+        closeModal(); alert("Orden generada exitosamente."); loadOrders('reset');
+    } catch (error) { console.error("Error:", error); alert("Error al procesar: " + error.message); }
+};
+
+window.formatCurrencyInput = (input) => { let value = input.value.replace(/\D/g, ''); if (value === '') { input.value = ''; return; } input.value = new Intl.NumberFormat('es-CO').format(parseInt(value)); };
+window.openModal = () => { orderIdInput.value = ""; clientSelect.value = ""; clientInfoBox.classList.add('hidden'); currentMeasures = {}; orderItems = []; activeTab = 'chaqueta'; inventorySearch.value = ""; selectedInventoryId.value = ""; addItemDesc.value = ""; addItemDesc.readOnly = false; addItemQty.value = "1"; addItemPrice.value = ""; addItemNotes.value = ""; selectedSizeInput.value = ""; sizeSelectorContainer.classList.add('hidden'); sizeButtons.innerHTML = ""; imgPreviewContainer.classList.add('hidden'); advanceInput.value = ""; targetAccountSelect.value = ""; renderMeasuresInputs(); renderOrderItems(); orderNotesInput.value = ""; statusInput.value = "recibido"; modalTitle.textContent = "Nueva Orden"; modal.classList.remove('hidden'); modal.classList.add('flex'); };
+window.closeModal = () => { modal.classList.add('hidden'); modal.classList.remove('flex'); };
+window.deleteOrder = async (id) => { if(confirm("¿Eliminar orden?")) await deleteDoc(doc(db, "orders", id)); };

@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soriano | Solicitud de Acceso</title>
+    <link href="../css/styles.css" rel="stylesheet">
+</head>
+<body class="bg-soriano-dark h-screen w-screen overflow-hidden">
+
+    <div class="flex w-full h-full">
+        
+        <div class="hidden md:flex w-1/2 bg-black relative justify-center items-center flex-col p-12 overflow-hidden border-r border-gray-900">
+            <div class="absolute top-0 left-0 w-full h-full bg-gradient-to-tl from-soriano-red/10 to-transparent z-0"></div>
+            
+            <div class="z-10 text-center">
+                <div class="mb-8 flex justify-center">
+                    <img src="../assets/img/logo.jpg" alt="Soriano Logo" class="w-32 h-32 object-contain rounded-full border border-soriano-red opacity-80">
+                </div>
+                <h1 class="text-4xl font-serif text-white mb-4">Únete al Equipo</h1>
+                <p class="text-gray-400 text-lg font-light max-w-md mx-auto">
+                    Solicita tu cuenta corporativa para gestionar producción, ventas o inventario.
+                </p>
+            </div>
+        </div>
+
+        <div class="w-full md:w-1/2 bg-soriano-dark flex justify-center items-center p-4 relative overflow-y-auto">
+            
+            <div class="w-full max-w-md space-y-6 my-auto">
+                
+                <div class="md:hidden text-center mb-6">
+                    <h2 class="text-2xl font-serif text-white">SORIANO</h2>
+                    <p class="text-gray-500 text-xs uppercase tracking-widest">Solicitud de Acceso</p>
+                </div>
+
+                <div class="text-left">
+                    <h2 class="text-2xl font-serif text-white mb-1">Crear Cuenta</h2>
+                    <p class="text-gray-400 text-sm">Tu cuenta deberá ser aprobada por un administrador.</p>
+                </div>
+
+                <form id="registerForm" class="mt-6 space-y-4">
+                    
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1 uppercase tracking-wide">Nombre Completo</label>
+                        <input type="text" id="fullName" required 
+                            class="input-soriano" placeholder="Ej. Juan Pérez">
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1 uppercase tracking-wide">Departamento</label>
+                        <select id="department" required class="input-soriano appearance-none">
+                            <option value="" disabled selected>Selecciona tu área</option>
+                            <option value="ventas">Ventas / Comercial</option>
+                            <option value="taller">Taller / Confección</option>
+                            <option value="contabilidad">Contabilidad / Administración</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-medium text-gray-400 mb-1 uppercase tracking-wide">Correo Corporativo</label>
+                        <input type="email" id="email" required 
+                            class="input-soriano" placeholder="usuario@soriano.com">
+                    </div>
+
+                    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                        <div>
+                            <label class="block text-xs font-medium text-gray-400 mb-1 uppercase tracking-wide">Contraseña</label>
+                            <input type="password" id="password" required minlength="6"
+                                class="input-soriano" placeholder="******">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-medium text-gray-400 mb-1 uppercase tracking-wide">Confirmar</label>
+                            <input type="password" id="confirmPassword" required minlength="6"
+                                class="input-soriano" placeholder="******">
+                        </div>
+                    </div>
+
+                    <div id="feedbackMessage" class="hidden p-3 rounded text-sm flex items-center">
+                        <span id="feedbackText"></span>
+                    </div>
+
+                    <button type="submit" id="registerBtn" class="btn-primary w-full shadow-lg shadow-red-900/20 mt-4">
+                        Enviar Solicitud
+                    </button>
+                </form>
+
+                <div class="text-center mt-6">
+                    <p class="text-sm text-gray-500">
+                        ¿Ya tienes una cuenta activa? 
+                        <a href="login.html" class="font-medium text-soriano-red hover:text-white transition-colors">Iniciar Sesión</a>
+                    </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module" src="../js/register.js"></script>
+</body>
+</html>

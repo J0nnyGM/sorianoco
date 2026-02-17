@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soriano | Tesorería</title>
+    <link href="../css/styles.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="icon" href="data:,">
+</head>
+<body class="bg-soriano-dark text-gray-300 font-sans antialiased">
+
+    <div id="app-layout" class="flex h-screen overflow-hidden">
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-soriano-dark p-6 md:p-12 w-full">
+            
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                <div>
+                    <h1 class="text-3xl font-serif text-white mb-1">Tesorería & Cuentas</h1>
+                    <p class="text-gray-500 text-sm">Gestión financiera, llaves y control de saldos.</p>
+                </div>
+                <div class="flex space-x-3">
+                    <button onclick="openTransferModal()" class="btn-outline flex items-center">
+                        <i class="fas fa-exchange-alt mr-2"></i> Transferir
+                    </button>
+                    <button onclick="openModal()" class="btn-primary flex items-center shadow-lg shadow-red-900/20">
+                        <i class="fas fa-plus mr-2"></i> Nueva Cuenta
+                    </button>
+                </div>
+            </div>
+
+            <div id="accountsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div class="col-span-full text-center py-10 text-gray-500">
+                    <i class="fas fa-circle-notch fa-spin mr-2"></i> Cargando saldos...
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="accountModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-50 backdrop-blur-sm p-4 overflow-y-auto">
+        <div class="bg-gray-900 border border-gray-700 rounded-lg max-w-lg w-full shadow-2xl my-8">
+            <div class="p-6 border-b border-gray-800 flex justify-between items-center">
+                <h3 class="text-xl font-serif text-white" id="modalTitle">Gestión de Cuenta</h3>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="accountForm" class="p-6 space-y-4">
+                <input type="hidden" id="accountId">
+                <input type="hidden" id="currentQrUrl">
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-2">
+                        <label class="block text-xs text-gray-400 mb-1 uppercase">Nombre Identificador (Alias)</label>
+                        <input type="text" id="accName" required class="input-soriano" placeholder="Ej. Bancolombia Principal">
+                    </div>
+                    
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1 uppercase">Plataforma</label>
+                        <select id="accType" class="input-soriano appearance-none">
+                            <option value="banco">Banco</option>
+                            <option value="nequi">Billetera (Nequi/Davi)</option>
+                            <option value="efectivo">Efectivo / Caja</option>
+                        </select>
+                    </div>
+
+                    <div id="bankTypeContainer">
+                        <label class="block text-xs text-gray-400 mb-1 uppercase">Tipo de Cuenta</label>
+                        <select id="accSubtype" class="input-soriano appearance-none">
+                            <option value="Ahorros">Ahorros</option>
+                            <option value="Corriente">Corriente</option>
+                        </select>
+                    </div>
+
+                    <div id="numberContainer" class="col-span-2">
+                        <label class="block text-xs text-gray-400 mb-1 uppercase" id="numberLabel"># Cuenta</label>
+                        <input type="text" id="accNumber" class="input-soriano font-mono" placeholder="000-000-000">
+                    </div>
+
+                    <div id="keyContainer" class="col-span-2">
+                        <label class="block text-xs text-gray-400 mb-1 uppercase">Llave / ID Comercio</label>
+                        <input type="text" id="accKey" class="input-soriano" placeholder="Ej. Código de integración o ID">
+                    </div>
+                </div>
+
+                <div class="bg-black/20 p-3 rounded border border-gray-700">
+                    <label class="block text-xs text-gray-400 mb-2 uppercase">Código QR (Imagen)</label>
+                    <div class="flex items-center space-x-4">
+                        <div class="w-16 h-16 bg-gray-800 rounded flex items-center justify-center overflow-hidden border border-gray-600">
+                            <img id="qrPreview" src="" class="w-full h-full object-cover hidden">
+                            <i id="qrIcon" class="fas fa-qrcode text-2xl text-gray-600"></i>
+                        </div>
+                        <input type="file" id="qrInput" accept="image/*" class="text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-gray-700 file:text-white hover:file:bg-gray-600">
+                    </div>
+                </div>
+                
+                <div id="taxContainer" class="flex items-center space-x-3 bg-gray-800/50 p-3 rounded border border-gray-700">
+                    <input type="checkbox" id="accTax" class="w-4 h-4 text-soriano-red bg-gray-700 border-gray-600 rounded">
+                    <label for="accTax" class="text-sm text-gray-300 select-none cursor-pointer">Aplica 4x1000</label>
+                </div>
+
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1 uppercase">Saldo ($)</label>
+                    <input type="text" id="accBalance" class="input-soriano text-xl font-bold" placeholder="0" oninput="formatCurrencyInput(this)">
+                </div>
+
+                <div class="pt-4 flex justify-end space-x-3">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 text-gray-400 hover:text-white text-sm">Cancelar</button>
+                    <button type="submit" id="saveBtn" class="btn-primary">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="transferModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-50 backdrop-blur-sm p-4">
+        <div class="bg-gray-900 border border-gray-700 rounded-lg max-w-lg w-full shadow-2xl">
+            <div class="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-800">
+                <h3 class="text-xl font-serif text-white">Transferencia</h3>
+                <button onclick="closeTransferModal()" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
+            </div>
+            <form id="transferForm" class="p-6 space-y-5">
+                <div class="grid grid-cols-2 gap-4 relative">
+                    <div>
+                        <label class="block text-[10px] text-gray-500 uppercase mb-1">Origen</label>
+                        <select id="sourceAccount" required class="input-soriano appearance-none border-red-900/50"><option value="">...</option></select>
+                        <div id="sourceBalanceDisplay" class="text-[10px] text-gray-400 mt-1 text-right min-h-[1.5rem]">Saldo: $0</div>
+                    </div>
+                    <div class="absolute inset-0 flex items-center justify-center pointer-events-none mt-[-15px]">
+                        <div class="bg-gray-700 rounded-full p-1 border border-gray-600"><i class="fas fa-arrow-right text-gray-400"></i></div>
+                    </div>
+                    <div>
+                        <label class="block text-[10px] text-gray-500 uppercase mb-1">Destino</label>
+                        <select id="destAccount" required class="input-soriano appearance-none border-green-900/50"><option value="">...</option></select>
+                    </div>
+                </div>
+                <div><label class="block text-xs text-gray-400 mb-1 uppercase">Monto</label><input type="text" id="transferAmount" class="input-soriano text-xl font-bold" oninput="formatCurrencyInput(this)"></div>
+                <div id="taxPreview" class="hidden bg-red-900/20 p-3 rounded border border-red-900/50 text-sm flex justify-between items-center"><span class="text-red-400">Aplica 4x1000</span><span class="text-white font-bold" id="taxAmountDisplay">-$0</span></div>
+                <div><label class="block text-xs text-gray-400 mb-1 uppercase">Nota</label><input type="text" id="transferNote" class="input-soriano"></div>
+                <div class="pt-2"><button type="submit" class="btn-primary w-full">Confirmar</button></div>
+            </form>
+        </div>
+    </div>
+
+    <div id="historyModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-50 backdrop-blur-sm p-4 overflow-y-auto">
+        <div class="bg-gray-900 border border-gray-700 rounded-lg max-w-3xl w-full shadow-2xl my-8 h-[80vh] flex flex-col">
+            <div class="p-6 border-b border-gray-800 bg-gray-900 flex flex-col md:flex-row justify-between items-center gap-4">
+                <div><h3 class="text-xl font-serif text-white" id="historyTitle">Extracto</h3></div>
+                <div class="flex items-center space-x-2"><label class="text-xs text-gray-400">Mes:</label><input type="month" id="historyMonthPicker" class="input-soriano py-1 px-3 text-sm w-40" onchange="filterHistory()"><button onclick="closeHistoryModal()" class="text-gray-400 hover:text-white ml-4"><i class="fas fa-times"></i></button></div>
+            </div>
+            <div class="flex-1 overflow-y-auto p-0 custom-scrollbar"><table class="w-full text-left text-sm"><thead class="bg-gray-900 text-gray-500 uppercase text-xs sticky top-0 z-10 shadow-sm"><tr><th class="p-4 bg-gray-900">Fecha</th><th class="p-4 bg-gray-900">Concepto</th><th class="p-4 bg-gray-900 text-right">Valor</th></tr></thead><tbody id="historyBody" class="divide-y divide-gray-800 text-gray-300"></tbody></table></div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initAdminLayout } from '../js/global-components.js';
+        initAdminLayout('cuentas'); 
+        import './cuentas.js'; 
+    </script>
+</body>
+</html>

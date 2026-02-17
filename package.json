@@ -1,0 +1,11 @@
+{
+  "name": "sistema-alta-costura",
+  "version": "1.0.0",
+  "scripts": {
+    "build:css": "npx tailwindcss -i ./src/input.css -o ./public/css/styles.css --minify",
+    "watch:css": "npx tailwindcss -i ./src/input.css -o ./public/css/styles.css --watch"
+  },
+  "devDependencies": {
+    "tailwindcss": "^3.4.0"
+  }
+}

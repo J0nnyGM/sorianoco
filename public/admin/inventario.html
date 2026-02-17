@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soriano | Inventario Global</title>
+    <link href="../css/styles.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="icon" href="data:,">
+</head>
+<body class="bg-soriano-dark text-gray-300 font-sans antialiased">
+
+    <div id="app-layout" class="flex h-screen overflow-hidden">
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-soriano-dark p-6 md:p-12 w-full">
+            
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                <div>
+                    <h1 class="text-3xl font-serif text-white mb-1">Inventario General</h1>
+                    <p class="text-gray-500 text-sm">Materias primas y productos terminados.</p>
+                </div>
+                <button onclick="openModal()" class="btn-primary flex items-center shadow-lg shadow-red-900/20">
+                    <i class="fas fa-plus mr-2"></i> Nuevo Ítem
+                </button>
+            </div>
+
+            <div class="bg-black/40 border border-gray-800 rounded-lg overflow-hidden shadow-xl">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-gray-800 text-xs uppercase text-gray-500 bg-gray-900/50">
+                                <th class="px-6 py-4 font-medium tracking-wider w-20">Img</th>
+                                <th class="px-6 py-4 font-medium tracking-wider">Nombre / SKU</th>
+                                <th class="px-6 py-4 font-medium tracking-wider">Categoría</th>
+                                <th class="px-6 py-4 font-medium tracking-wider text-right">Stock</th>
+                                <th class="px-6 py-4 font-medium tracking-wider text-right">Costo Unit.</th> <th class="px-6 py-4 font-medium tracking-wider text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inventoryTableBody" class="divide-y divide-gray-800 text-sm">
+                            <tr><td colspan="6" class="p-8 text-center text-gray-500">Cargando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="itemModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-50 backdrop-blur-sm p-4 overflow-y-auto">
+        <div class="bg-gray-900 border border-gray-700 rounded-lg max-w-2xl w-full shadow-2xl my-8">
+            
+            <div class="p-6 border-b border-gray-800 flex justify-between items-center">
+                <h3 class="text-xl font-serif text-white" id="modalTitle">Nuevo Ítem</h3>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white transition"><i class="fas fa-times"></i></button>
+            </div>
+
+            <form id="inventoryForm" class="p-6 space-y-6">
+                <input type="hidden" id="itemId">
+                <input type="hidden" id="currentImageUrl">
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1 uppercase">Clasificación</label>
+                        <select id="classification" class="input-soriano appearance-none bg-gray-800 font-bold text-soriano-gold">
+                            <option value="material">Materia Prima</option>
+                            <option value="producto">Producto Terminado</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1 uppercase">Categoría</label>
+                        <select id="itemType" class="input-soriano appearance-none">
+                            </select>
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="col-span-2 md:col-span-1">
+                        <label class="block text-xs text-gray-400 mb-1 uppercase">Nombre</label>
+                        <input type="text" id="itemName" required class="input-soriano" placeholder="Ej. Blazer Lino Beige">
+                    </div>
+                    <div class="col-span-2 md:col-span-1">
+                        <label class="block text-xs text-gray-400 mb-1 uppercase">SKU / Código</label>
+                        <input type="text" id="itemSku" class="input-soriano" placeholder="(Auto si está vacío)">
+                    </div>
+                </div>
+
+                <div id="imageSection">
+                    <label class="block text-xs text-gray-400 mb-1 uppercase">Imagen de Referencia</label>
+                    <div class="flex items-center space-x-4">
+                        <div class="w-16 h-16 bg-gray-800 rounded border border-gray-700 overflow-hidden flex items-center justify-center">
+                            <img id="imagePreview" src="" class="w-full h-full object-cover hidden">
+                            <i id="imageIcon" class="fas fa-image text-gray-600"></i>
+                        </div>
+                        <input type="file" id="imageInput" accept="image/*" class="text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-soriano-red file:text-white hover:file:bg-red-700 cursor-pointer">
+                    </div>
+                </div>
+
+                <div class="bg-black/20 p-4 rounded border border-gray-700/50">
+                    
+                    <div id="simpleStockSection" class="grid grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1 uppercase">Cantidad</label>
+                            <input type="number" id="itemQty" step="0.01" min="0" oninput="if(this.value<0)this.value=0" class="input-soriano" placeholder="0.00">
+                        </div>
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-1 uppercase">Unidad</label>
+                            <select id="itemUnit" class="input-soriano appearance-none">
+                                <option value="mts">Metros</option>
+                                <option value="pza">Piezas</option>
+                                <option value="kgs">Kilos</option>
+                                <option value="rollos">Rollos</option>
+                            </select>
+                        </div>
+                         <div>
+                            <label class="block text-xs text-gray-400 mb-1 uppercase text-soriano-red">Stock Mínimo Alerta</label>
+                            <input type="number" id="itemMin" min="0" oninput="if(this.value<0)this.value=0" class="input-soriano border-soriano-red/30">
+                        </div>
+                    </div>
+
+                    <div id="sizesStockSection" class="hidden">
+                        <label class="block text-xs text-gray-400 mb-2 uppercase text-center border-b border-gray-700 pb-1" id="sizesLabel">Stock por Tallas</label>
+                        <div id="sizesContainer" class="grid grid-cols-4 md:grid-cols-6 gap-3"></div>
+                        <div class="mt-3 text-right text-xs text-gray-400">
+                            Total Unidades: <span id="totalSizesDisplay" class="font-bold text-white">0</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1 uppercase">Costo Unitario</label>
+                    <div class="relative">
+                        <span class="absolute left-3 top-3 text-gray-500 pointer-events-none">$</span>
+                        <input 
+                            type="text" 
+                            id="itemCost" 
+                            required 
+                            class="input-soriano pl-8" 
+                            placeholder="0"
+                            oninput="formatCurrencyInput(this)"
+                        >
+                    </div>
+                </div>
+
+                <div class="pt-4 flex justify-end space-x-3">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 text-gray-400 hover:text-white text-sm">Cancelar</button>
+                    <button type="submit" id="saveBtn" class="btn-primary">Guardar Ítem</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initAdminLayout } from '../js/global-components.js';
+        initAdminLayout('inventario'); 
+        import './inventario.js'; 
+    </script>
+</body>
+</html>

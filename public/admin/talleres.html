@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soriano | Talleres Externos</title>
+    <link href="../css/styles.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="icon" href="data:,">
+</head>
+<body class="bg-soriano-dark text-gray-300 font-sans antialiased">
+
+    <div id="app-layout" class="flex h-screen overflow-hidden">
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-soriano-dark p-6 md:p-12 w-full">
+            
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                <div>
+                    <h1 class="text-3xl font-serif text-white mb-1">Producción Externa</h1>
+                    <p class="text-gray-500 text-sm">Control de prendas en bordado, lavandería o satélites.</p>
+                </div>
+                <button onclick="openModal()" class="btn-primary flex items-center shadow-lg shadow-red-900/20">
+                    <i class="fas fa-external-link-alt mr-2"></i> Registrar Salida
+                </button>
+            </div>
+
+            <div class="bg-black/40 border border-gray-800 rounded-lg overflow-hidden shadow-xl">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-gray-800 text-xs uppercase text-gray-500 bg-gray-900/50">
+                                <th class="px-6 py-4 font-medium tracking-wider">Orden / Prenda</th>
+                                <th class="px-6 py-4 font-medium tracking-wider">Taller (Proveedor)</th>
+                                <th class="px-6 py-4 font-medium tracking-wider">Servicio</th>
+                                <th class="px-6 py-4 font-medium tracking-wider text-right">Fecha Retorno</th>
+                                <th class="px-6 py-4 font-medium tracking-wider text-right">Estado</th>
+                                <th class="px-6 py-4 font-medium tracking-wider text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="externalTableBody" class="divide-y divide-gray-800 text-sm">
+                            <tr><td colspan="6" class="p-8 text-center text-gray-500">Cargando procesos...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="externalModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 backdrop-blur-sm p-4">
+        <div class="bg-gray-900 border border-gray-700 rounded-lg max-w-lg w-full shadow-2xl">
+            
+            <div class="p-6 border-b border-gray-800 flex justify-between items-center">
+                <h3 class="text-xl font-serif text-white" id="modalTitle">Salida a Taller</h3>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white transition"><i class="fas fa-times"></i></button>
+            </div>
+
+            <form id="externalForm" class="p-6 space-y-4">
+                <input type="hidden" id="processId">
+
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1 uppercase">Orden Relacionada</label>
+                    <select id="orderSelect" required class="input-soriano appearance-none">
+                        <option value="">Cargando órdenes...</option>
+                    </select>
+                </div>
+
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1 uppercase">Taller / Proveedor</label>
+                    <select id="workshopSelect" required class="input-soriano appearance-none">
+                        <option value="">Cargando talleres...</option>
+                    </select>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1 uppercase">Servicio</label>
+                        <select id="serviceType" class="input-soriano appearance-none">
+                            <option value="bordado">Bordado</option>
+                            <option value="lavanderia">Lavandería</option>
+                            <option value="plisado">Plisado</option>
+                            <option value="teñido">Teñido</option>
+                            <option value="confeccion_externa">Confección Satélite</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1 uppercase">Costo Estimado</label>
+                        <input type="number" id="estimatedCost" class="input-soriano" placeholder="$ 0.00">
+                    </div>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1 uppercase">Fecha Salida</label>
+                        <input type="date" id="dateOut" required class="input-soriano text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1 uppercase">Fecha Retorno</label>
+                        <input type="date" id="dateReturn" required class="input-soriano text-white">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs text-gray-400 mb-1 uppercase">Observaciones</label>
+                    <textarea id="notes" rows="2" class="input-soriano" placeholder="Ej. Hilo dorado, cuidado con la tela."></textarea>
+                </div>
+
+                <div class="pt-4 flex justify-end space-x-3">
+                    <button type="button" onclick="closeModal()" class="px-4 py-2 text-gray-400 hover:text-white text-sm">Cancelar</button>
+                    <button type="submit" class="btn-primary">Registrar Salida</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initAdminLayout } from '../js/global-components.js';
+        initAdminLayout('talleres'); 
+        import './talleres.js'; 
+    </script>
+</body>
+</html>

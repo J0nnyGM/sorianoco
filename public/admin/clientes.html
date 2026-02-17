@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soriano | Clientes</title>
+    <link href="../css/styles.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="icon" href="data:,">
+</head>
+<body class="bg-soriano-dark text-gray-300 font-sans antialiased">
+
+    <div id="app-layout" class="flex h-screen overflow-hidden">
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-soriano-dark p-6 md:p-12 w-full">
+            
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                <div>
+                    <h1 class="text-3xl font-serif text-white mb-1">Cartera de Clientes</h1>
+                    <p class="text-gray-500 text-sm">Gestión de base de datos.</p>
+                </div>
+                
+                <div class="flex flex-wrap gap-2 items-center">
+                    <select id="filterStatus" class="bg-black border border-gray-700 text-white text-sm rounded px-3 py-2 focus:border-soriano-gold outline-none">
+                        <option value="active">Ver Activos</option>
+                        <option value="archived">Ver Archivados</option>
+                    </select>
+
+                    <input type="text" id="searchInput" placeholder="Buscar..." class="input-soriano py-2 px-4 text-sm w-40 md:w-56">
+                    
+                    <button onclick="openModal()" class="btn-primary flex items-center shadow-lg shadow-red-900/20 whitespace-nowrap px-4 py-2 text-sm">
+                        <i class="fas fa-plus mr-2"></i> Nuevo
+                    </button>
+                </div>
+            </div>
+
+            <div class="bg-black/40 border border-gray-800 rounded-lg overflow-hidden shadow-xl">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-gray-800 text-xs uppercase text-gray-500 bg-gray-900/50">
+                                <th class="px-6 py-4 font-medium tracking-wider">Cliente</th>
+                                <th class="px-6 py-4 font-medium tracking-wider">Contacto</th>
+                                <th class="px-6 py-4 font-medium tracking-wider text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clientsTableBody" class="divide-y divide-gray-800 text-sm">
+                            <tr><td colspan="3" class="px-6 py-8 text-center text-gray-500"><i class="fas fa-circle-notch fa-spin mr-2"></i> Cargando...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="clientModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-50 backdrop-blur-sm p-4">
+        <div class="bg-gray-900 border border-gray-700 rounded-lg w-full max-w-2xl shadow-2xl">
+            <div class="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-900 rounded-t-lg">
+                <div><h3 class="text-xl font-serif text-white" id="modalTitle">Nuevo Cliente</h3></div>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
+            </div>
+            
+            <form id="clientForm" class="p-6 space-y-4">
+                <input type="hidden" id="clientId">
+                
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1 uppercase">Nombre Completo</label>
+                        <input type="text" id="clientName" required class="input-soriano text-white">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1 uppercase">ID / NIT</label>
+                        <input type="text" id="clientIdNum" class="input-soriano">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1 uppercase">Teléfono</label>
+                        <input type="tel" id="clientPhone" class="input-soriano">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1 uppercase">Email</label>
+                        <input type="email" id="clientEmail" class="input-soriano">
+                    </div>
+                    <div class="md:col-span-2">
+                        <label class="block text-xs text-gray-400 mb-1 uppercase">Dirección</label>
+                        <input type="text" id="clientAddress" class="input-soriano">
+                    </div>
+                </div>
+
+                <div class="pt-4 flex justify-end space-x-3 border-t border-gray-800 mt-4">
+                    <button type="button" onclick="closeModal()" class="btn-outline text-xs">Cancelar</button>
+                    <button type="submit" class="btn-primary">Guardar Datos</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initAdminLayout } from '../js/global-components.js';
+        initAdminLayout('clientes'); 
+        import './clientes.js'; 
+    </script>
+</body>
+</html>

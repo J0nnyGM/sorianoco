@@ -1,0 +1,93 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600&family=Playfair+Display:wght@400;700&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-soriano-dark text-gray-200 font-sans antialiased;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-serif text-soriano-white;
+  }
+
+  /* --- SCROLLBAR GLOBAL --- */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+
+  ::-webkit-scrollbar-track {
+    background: #121212;
+  }
+
+  ::-webkit-scrollbar-thumb {
+    background: #2A2A2A;
+    border-radius: 5px;
+    border: 2px solid #121212;
+  }
+
+  ::-webkit-scrollbar-thumb:hover {
+    background: #404040;
+  }
+}
+
+@layer components {
+  .btn-primary {
+    @apply bg-soriano-red text-white px-6 py-2 rounded hover:bg-soriano-red_hover transition-colors duration-300 font-medium tracking-wide uppercase text-sm;
+  }
+  
+  .btn-outline {
+    @apply border border-soriano-red text-soriano-red px-6 py-2 rounded hover:bg-soriano-red hover:text-white transition-colors duration-300 uppercase text-sm;
+  }
+
+  /* --- INPUTS SORIANO MEJORADOS --- */
+  .input-soriano {
+    /* Agregamos color-scheme: dark para que las flechas y calendarios sean oscuros */
+    color-scheme: dark; 
+    
+    @apply w-full bg-soriano-gray border border-gray-700 text-white p-3 rounded 
+           focus:outline-none focus:border-soriano-red focus:ring-1 focus:ring-soriano-red 
+           transition-all placeholder-gray-500;
+  }
+
+  /* Opcional: Si quieres que las flechas sean más grandes o rojas al pasar el mouse */
+  .input-soriano::-webkit-inner-spin-button,
+  .input-soriano::-webkit-outer-spin-button {
+    cursor: pointer;
+    opacity: 0.7;
+    filter: invert(0); /* Asegura contraste */
+    height: 1.5em; /* Un poco más grandes para facilitar el clic */
+  }
+  
+  .input-soriano:hover::-webkit-inner-spin-button {
+     opacity: 1;
+  }
+}
+
+@layer utilities {
+  .custom-scrollbar {
+    scrollbar-width: thin;
+    scrollbar-color: #2A2A2A #121212;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb {
+    background-color: #2A2A2A;
+    border-radius: 20px;
+  }
+
+  .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+    background-color: #CE2029;
+  }
+}

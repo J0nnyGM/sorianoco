@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soriano | Compras</title>
+    <link href="../css/styles.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="icon" href="data:,">
+</head>
+<body class="bg-soriano-dark text-gray-300 font-sans antialiased">
+
+    <div id="app-layout" class="flex h-screen overflow-hidden">
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-soriano-dark p-6 md:p-12 w-full">
+            
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+                <div>
+                    <h1 class="text-3xl font-serif text-white mb-1">Registro de Compras</h1>
+                    <p class="text-gray-500 text-sm">Ingreso de materiales y productos terminados.</p>
+                </div>
+                <button onclick="openModal()" class="btn-primary flex items-center shadow-lg shadow-red-900/20">
+                    <i class="fas fa-plus mr-2"></i> Registrar Compra
+                </button>
+            </div>
+
+            <div class="bg-black/40 border border-gray-800 rounded-lg overflow-hidden shadow-xl">
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead>
+                            <tr class="border-b border-gray-800 text-xs uppercase text-gray-500 bg-gray-900/50">
+                                <th class="px-6 py-4 font-medium tracking-wider">Fecha / Factura</th>
+                                <th class="px-6 py-4 font-medium tracking-wider">Proveedor</th>
+                                <th class="px-6 py-4 font-medium tracking-wider">Ítems</th>
+                                <th class="px-6 py-4 font-medium tracking-wider text-right">Total Compra</th>
+                                <th class="px-6 py-4 font-medium tracking-wider text-right">Acciones</th>
+                            </tr>
+                        </thead>
+                        <tbody id="purchasesTableBody" class="divide-y divide-gray-800 text-sm">
+                            <tr><td colspan="5" class="p-8 text-center text-gray-500">Cargando historial...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="purchaseModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-50 backdrop-blur-sm p-4 overflow-y-auto">
+        <div class="bg-gray-900 border border-gray-700 rounded-lg max-w-4xl w-full shadow-2xl my-8">
+            
+            <div class="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-900">
+                <h3 class="text-xl font-serif text-white">Nueva Entrada de Almacén</h3>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white transition"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="p-6 space-y-6">
+                
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 pb-6 border-b border-gray-800">
+                    
+                    <div class="relative group">
+                        <label class="block text-xs text-gray-400 mb-1 uppercase">Proveedor</label>
+                        <input type="text" id="supplierSearch" class="input-soriano" placeholder="Buscar proveedor..." autocomplete="off">
+                        <input type="hidden" id="supplierId"> <div id="supplierList" class="hidden absolute z-50 w-full bg-gray-800 border border-gray-700 rounded shadow-xl max-h-48 overflow-y-auto mt-1 custom-scrollbar">
+                            </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1 uppercase">N° Factura / Ref</label>
+                        <input type="text" id="invoiceRef" class="input-soriano" placeholder="FAC-1234">
+                    </div>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-1 uppercase">Fecha Compra</label>
+                        <input type="date" id="purchaseDate" class="input-soriano text-white">
+                    </div>
+                </div>
+
+                <div class="bg-gray-800/30 p-4 rounded border border-gray-700">
+                    <h4 class="text-xs font-bold text-soriano-gold uppercase mb-3">Agregar al Carrito</h4>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-start">
+                        
+                        <div class="md:col-span-4">
+                            <label class="block text-[10px] text-gray-500 uppercase mb-1">Ítem (Material o Producto)</label>
+                            <select id="materialSelect" class="input-soriano text-sm py-2 appearance-none">
+                                <option value="">Seleccionar del Inventario...</option>
+                            </select>
+                        </div>
+
+                        <div class="md:col-span-5 bg-black/20 p-2 rounded border border-gray-700/50 min-h-[60px] flex items-center justify-center" id="stockInputsContainer">
+                            <p class="text-xs text-gray-600">Seleccione un ítem primero</p>
+                        </div>
+
+                        <div class="md:col-span-3 flex flex-col gap-2">
+                            <div>
+                                <label class="block text-[10px] text-gray-500 uppercase">Costo Total Compra</label>
+                                <input type="text" id="addCost" class="input-soriano text-sm py-2" placeholder="$ 0" oninput="formatCurrencyInput(this)">
+                            </div>
+                            <button onclick="addItemToCart()" class="w-full bg-soriano-red hover:bg-red-700 text-white text-sm py-2 rounded font-medium transition">
+                                + Agregar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border border-gray-800 rounded overflow-hidden">
+                    <table class="w-full text-left text-sm">
+                        <thead class="bg-gray-900/50 text-gray-500 uppercase text-xs">
+                            <tr>
+                                <th class="p-3">Ítem</th>
+                                <th class="p-3">Detalle (Cant/Tallas)</th>
+                                <th class="p-3 text-right">Costo Total</th>
+                                <th class="p-3 w-10"></th>
+                            </tr>
+                        </thead>
+                        <tbody id="cartTableBody" class="divide-y divide-gray-800 bg-black/20">
+                            <tr><td colspan="4" class="p-4 text-center text-xs text-gray-500">Agrega ítems arriba</td></tr>
+                        </tbody>
+                        <tfoot class="bg-gray-900 font-bold text-white">
+                            <tr>
+                                <td colspan="2" class="p-3 text-right uppercase text-xs text-gray-400">Total Factura</td>
+                                <td class="p-3 text-right text-soriano-gold" id="cartTotalDisplay">$0</td>
+                                <td></td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <div class="pt-2 flex justify-end space-x-3">
+                    <button onclick="closeModal()" class="px-4 py-2 text-gray-400 hover:text-white text-sm">Cancelar</button>
+                    <button onclick="savePurchase()" class="btn-primary">Registrar Entrada</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="detailModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-[60] backdrop-blur-sm p-4 overflow-y-auto">
+        <div class="bg-gray-900 border border-gray-700 rounded-lg max-w-2xl w-full shadow-2xl my-8">
+            
+            <div class="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-900 rounded-t-lg">
+                <div>
+                    <h3 class="text-xl font-serif text-white">Resumen de Factura</h3>
+                    <p class="text-xs text-gray-500" id="detailRef">REF: ...</p> </div>
+                <button onclick="document.getElementById('detailModal').classList.add('hidden'); document.getElementById('detailModal').classList.remove('flex');" class="text-gray-400 hover:text-white transition"><i class="fas fa-times"></i></button>
+            </div>
+
+            <div class="p-6 space-y-6">
+                
+                <div class="grid grid-cols-2 gap-4 text-sm border-b border-gray-800 pb-4">
+                    <div>
+                        <p class="text-xs text-gray-500 uppercase">Proveedor</p>
+                        <p class="text-white font-bold text-lg" id="detailSupplier">...</p> </div>
+                    <div class="text-right">
+                        <p class="text-xs text-gray-500 uppercase">Fecha</p>
+                        <p class="text-white font-mono" id="detailDate">...</p> </div>
+                </div>
+
+                <div class="border border-gray-800 rounded overflow-hidden">
+                    <table class="w-full text-left text-sm">
+                            <thead class="bg-gray-900/50 text-gray-500 uppercase text-xs">
+                                <tr>
+                                    <th class="p-3 w-16">Img</th> <th class="p-3">Material / Producto</th>
+                                    <th class="p-3">Detalle (Tallas/Cant)</th>
+                                    <th class="p-3 text-right">Subtotal</th>
+                                </tr>
+                            </thead>
+                        <tbody id="detailItemsBody" class="divide-y divide-gray-800 bg-black/20 text-gray-300">
+                            </tbody>
+                        <tfoot class="bg-gray-900 font-bold text-white">
+                            <tr>
+                                <td colspan="2" class="p-3 text-right uppercase text-xs text-gray-400">Total Pagado</td>
+                                <td class="p-3 text-right text-soriano-gold text-lg" id="detailTotal">$0</td> </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <div class="pt-2 flex justify-end">
+                    <button onclick="document.getElementById('detailModal').classList.add('hidden'); document.getElementById('detailModal').classList.remove('flex');" class="btn-outline text-xs">Cerrar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initAdminLayout } from '../js/global-components.js';
+        initAdminLayout('compras'); 
+        import './compras.js'; 
+    </script>
+</body>
+</html>
