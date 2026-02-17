@@ -9,6 +9,7 @@ const prevPageBtn = document.getElementById('prevPageBtn');
 const nextPageBtn = document.getElementById('nextPageBtn');
 const pageIndicator = document.getElementById('pageIndicator');
 
+
 // Modal Nueva Orden
 const modal = document.getElementById('orderModal');
 const modalTitle = document.getElementById('modalTitle');
@@ -50,6 +51,8 @@ const discountContainer = document.getElementById('discountContainer');
 const discountInput = document.getElementById('discountInput');
 const newBalancePreview = document.getElementById('newBalancePreview');
 
+const responsableSelect = document.getElementById('responsableSelect');
+
 // --- ESTADO LOCAL ---
 let clientsCache = [];
 let productsCache = [];
@@ -57,6 +60,8 @@ let accountsCache = [];
 let orderItems = [];
 let currentMeasures = {};
 let activeTab = 'chaqueta';
+
+let currentUserInfo = null; // Para saber si soy admin o no
 
 // Estado Paginación
 let currentStatus = 'recibido';
@@ -101,11 +106,22 @@ const statusColors = {
 onAuthStateChanged(auth, async (user) => {
     if (!user) { window.location.href = '../auth/login.html'; return; }
     
-    import("https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js")
-        .then(({ getDoc }) => getDoc(doc(db, "users", user.uid)))
-        .then(snap => { if(snap.exists()) updateSidebarUser(user, snap.data()) });
+    // Obtenemos datos del usuario actual
+    const userSnap = await getDoc(doc(db, "users", user.uid));
+    if(userSnap.exists()) {
+        currentUserInfo = userSnap.data();
+        currentUserInfo.uid = user.uid; // Guardamos el ID también
+        updateSidebarUser(user, currentUserInfo);
+    }
 
-    await Promise.all([loadClients(), loadInventoryProducts(), loadAccounts()]);
+    // Cargamos datos necesarios
+    await Promise.all([
+        loadClients(), 
+        loadInventoryProducts(), 
+        loadAccounts(),
+        loadUsersForSelect() // <--- NUEVA FUNCIÓN
+    ]);
+    
     filterByStatus('recibido');
 });
 
@@ -186,7 +202,12 @@ async function loadOrders(action) {
         const snapshot = await getDocs(q);
 
         if (snapshot.empty) {
-            ordersGrid.innerHTML = `<div class="col-span-full py-12 text-center text-gray-500">No hay órdenes en esta vista.</div>`;
+            ordersGrid.innerHTML = `
+                <tr>
+                    <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                        No hay órdenes en esta vista.
+                    </td>
+                </tr>`;
             nextPageBtn.disabled = true;
             if (currentPage === 1) prevPageBtn.disabled = true;
             return;
@@ -210,29 +231,38 @@ async function loadOrders(action) {
 }
 
 // RENDERIZADO TIPO LISTA (TODOS LOS BOTONES VISIBLES)
+// 2. Reemplazar completamente la función renderOrdersGrid
 function renderOrdersGrid(docs) {
     ordersGrid.innerHTML = docs.map(doc => {
         const data = doc.data();
         
-        // Estilo anulada
+        // Estilo especial para anuladas
         if (data.status === 'anulada') {
             return `
-                <div class="bg-red-900/10 border border-red-900/20 rounded-lg p-4 flex items-center justify-between opacity-60">
-                    <div class="flex items-center gap-4">
-                        <span class="font-mono text-red-500 font-bold text-sm">#${data.orderNumber}</span>
-                        <h3 class="text-white font-bold line-through">${data.clientName}</h3>
-                        <span class="px-2 py-0.5 rounded text-[10px] uppercase font-bold bg-red-900/50 text-red-400">Anulada</span>
-                    </div>
-                    <button onclick="window.deleteOrder('${doc.id}')" class="text-gray-500 hover:text-white text-xs"><i class="fas fa-trash"></i></button>
-                </div>
+                <tr class="bg-red-900/5 hover:bg-red-900/10 transition">
+                    <td class="px-6 py-4">
+                        <div class="flex items-center gap-3">
+                            <span class="font-mono text-red-500 font-bold text-sm">#${data.orderNumber}</span>
+                            <span class="px-2 py-0.5 rounded text-[10px] uppercase font-bold bg-red-900/20 text-red-400 border border-red-900/30">Anulada</span>
+                        </div>
+                    </td>
+                    <td class="px-6 py-4 text-gray-500 line-through">${data.clientName}</td>
+                    <td colspan="3" class="px-6 py-4 text-center text-xs text-red-900/50 uppercase font-bold tracking-widest">Orden Cancelada</td>
+                    <td class="px-6 py-4 text-right">
+                        <button onclick="window.deleteOrder('${doc.id}')" class="text-gray-600 hover:text-red-400 transition" title="Eliminar Definitivamente">
+                            <i class="fas fa-trash"></i>
+                        </button>
+                    </td>
+                </tr>
             `;
         }
 
+        // Lógica de items y resumen (Igual que antes)
         const items = data.items || [];
         const totalQty = items.reduce((sum, item) => sum + (parseInt(item.quantity) || 0), 0);
         let summary = 'Sin items';
         if (items.length === 1) summary = items[0].description;
-        else if (items.length > 1) summary = `${totalQty} Prendas (Varios)`;
+        else if (items.length > 1) summary = `${items.length} Prendas (Varios)`;
 
         let phoneDisplay = '';
         const cachedClient = clientsCache.find(c => c.id === data.clientId);
@@ -243,73 +273,107 @@ function renderOrdersGrid(docs) {
         const balance = data.balanceDue || 0;
         const isPaid = balance <= 0;
         const balanceHtml = !isPaid 
-            ? `<span class="text-red-400 font-bold text-xs">Deben: ${copFormatter.format(balance)}</span>` 
-            : `<span class="text-green-500 font-bold text-[10px] border border-green-500/50 px-2 py-0.5 rounded">PAGADO</span>`;
+            ? `<span class="text-red-400 font-bold text-xs whitespace-nowrap">${copFormatter.format(balance)}</span>` 
+            : `<span class="text-green-500 font-bold text-[10px] border border-green-500/30 bg-green-900/10 px-2 py-0.5 rounded">PAGADO</span>`;
 
         const nextStatus = nextStatusMap[data.status];
         
-        // Botón Avance Estado (Principal)
-        let statusBtn = '';
+        // Botones (Simplificados para tabla)
+        let actionButtons = '';
+        
+        // Botón Avanzar
         if (nextStatus) {
-            statusBtn = `
+            actionButtons += `
                 <button onclick="window.advanceStatus('${doc.id}', '${data.status}')" 
-                    class="h-8 px-3 bg-gray-800 hover:bg-gray-700 text-white text-[10px] rounded border border-gray-600 transition flex items-center gap-1"
+                    class="w-8 h-8 rounded-full bg-gray-800 hover:bg-soriano-gold hover:text-black text-gray-400 border border-gray-700 transition flex items-center justify-center"
                     title="Avanzar a ${statusLabels[nextStatus]}">
-                    <span>Avanzar</span> <i class="fas fa-arrow-right text-gray-400"></i>
+                    <i class="fas fa-arrow-right"></i>
                 </button>
             `;
         } else {
-            statusBtn = `<div class="h-8 px-3 flex items-center text-green-500 text-[10px] font-bold border border-transparent"><i class="fas fa-check-circle mr-1"></i> Fin</div>`;
+            actionButtons += `<div class="w-8 h-8 flex items-center justify-center text-green-500" title="Finalizado"><i class="fas fa-check-circle"></i></div>`;
         }
 
-        // Botón Pago
-        const payBtn = !isPaid 
-            ? `<button onclick="window.openPayModal('${doc.id}', ${balance}, '${data.orderNumber}')" class="w-8 h-8 bg-green-900/20 hover:bg-green-900/40 text-green-400 border border-green-900/50 rounded flex items-center justify-center transition" title="Registrar Pago"><i class="fas fa-dollar-sign"></i></button>` 
-            : ``;
+        // Botón Pagar
+        if (!isPaid) {
+            actionButtons += `
+                <button onclick="window.openPayModal('${doc.id}', ${balance}, '${data.orderNumber}')" 
+                    class="w-8 h-8 rounded-full bg-green-900/20 hover:bg-green-500 hover:text-white text-green-400 border border-green-900/30 transition flex items-center justify-center" 
+                    title="Registrar Pago">
+                    <i class="fas fa-dollar-sign"></i>
+                </button>
+            `;
+        }
 
-        // Botón Anular
-        const cancelBtn = `<button onclick="window.cancelOrder('${doc.id}', '${data.orderNumber}', ${data.totalAmount - balance})" class="w-8 h-8 text-red-500 hover:bg-red-900/20 rounded flex items-center justify-center transition" title="Anular"><i class="fas fa-ban"></i></button>`;
+        // Botón Ver Detalle
+        actionButtons += `
+            <a href="orden-detalle.html?id=${doc.id}" 
+                class="w-8 h-8 rounded-full hover:bg-blue-500 hover:text-white text-blue-400 transition flex items-center justify-center" 
+                title="Ver Detalle">
+                <i class="fas fa-eye"></i>
+            </a>
+        `;
 
-        // Botones Detalle / Print
-        const viewBtn = `<a href="orden-detalle.html?id=${doc.id}" class="w-8 h-8 text-blue-400 hover:bg-blue-900/20 rounded flex items-center justify-center transition" title="Ver Detalle"><i class="fas fa-eye"></i></a>`;
-        const printBtn = `<a href="remision.html?id=${doc.id}" target="_blank" class="w-8 h-8 text-gray-400 hover:text-white hover:bg-gray-800 rounded flex items-center justify-center transition" title="Imprimir"><i class="fas fa-print"></i></a>`;
+        // Botón Imprimir
+        actionButtons += `
+            <a href="remision.html?id=${doc.id}" target="_blank" 
+                class="w-8 h-8 rounded-full hover:bg-white hover:text-black text-gray-500 transition flex items-center justify-center" 
+                title="Imprimir">
+                <i class="fas fa-print"></i>
+            </a>
+        `;
 
+        // Botón Anular (Dropdown o directo, aquí directo por espacio)
+        actionButtons += `
+            <button onclick="window.cancelOrder('${doc.id}', '${data.orderNumber}', ${data.totalAmount - balance})" 
+                class="w-8 h-8 rounded-full hover:bg-red-500 hover:text-white text-gray-600 transition flex items-center justify-center" 
+                title="Anular Orden">
+                <i class="fas fa-ban"></i>
+            </button>
+        `;
+
+        // Renderizar la FILA (TR)
         return `
-            <div class="bg-gray-900 border border-gray-800 rounded-lg p-3 flex flex-col md:flex-row items-center gap-4 hover:border-gray-600 transition group">
+            <tr class="hover:bg-white/5 transition group border-b border-gray-800 last:border-0">
                 
-                <div class="flex items-center gap-3 w-full md:w-32">
-                    <span class="font-mono text-soriano-gold font-bold text-sm">#${data.orderNumber}</span>
-                    <span class="px-2 py-0.5 rounded text-[10px] uppercase font-bold border ${statusColors[data.status]}">
-                        ${statusLabels[data.status]}
-                    </span>
-                </div>
+                <td class="px-6 py-4 whitespace-nowrap">
+                    <div class="flex flex-col gap-1">
+                        <span class="font-mono text-soriano-gold font-bold text-sm">#${data.orderNumber}</span>
+                        <span class="text-[10px] uppercase font-bold text-gray-400 tracking-wide">
+                            <span class="inline-block w-2 h-2 rounded-full mr-1 ${statusColors[data.status].replace('text-', 'bg-').split(' ')[0]}"></span>
+                            ${statusLabels[data.status]}
+                        </span>
+                    </div>
+                </td>
 
-                <div class="flex-1 w-full md:w-1/4">
-                    <h3 class="text-white font-bold text-sm truncate">${data.clientName}</h3>
+                <td class="px-6 py-4">
+                    <div class="font-bold text-white text-sm truncate max-w-[150px]">${data.clientName}</div>
                     ${phoneDisplay}
-                </div>
+                </td>
 
-                <div class="flex-1 w-full md:w-auto hidden md:block">
-                    <p class="text-xs text-gray-400 font-medium truncate"><span class="text-white font-bold">${totalQty}x</span> ${summary}</p>
-                </div>
+                <td class="px-6 py-4 hidden md:table-cell">
+                    <div class="flex items-center">
+                        <span class="bg-gray-800 text-white text-xs font-bold px-2 py-0.5 rounded mr-2">${totalQty}</span>
+                        <span class="text-gray-400 text-xs truncate max-w-[200px]">${summary}</span>
+                    </div>
+                </td>
 
-                <div class="w-full md:w-24 text-right hidden md:block">
-                    <p class="text-[10px] text-gray-500">Entrega</p>
-                    <p class="text-xs text-white font-mono">${data.deadline}</p>
-                </div>
+                <td class="px-6 py-4 text-center hidden md:table-cell">
+                    <div class="font-mono text-xs text-gray-300 bg-gray-900 inline-block px-2 py-1 rounded border border-gray-800">
+                        ${data.deadline}
+                    </div>
+                </td>
 
-                <div class="w-full md:w-28 text-right flex items-center justify-end">
+                <td class="px-6 py-4 text-right">
                     ${balanceHtml}
-                </div>
+                </td>
 
-                <div class="flex items-center gap-1 w-full md:w-auto justify-end mt-2 md:mt-0 border-t md:border-0 border-gray-800 pt-2 md:pt-0">
-                    ${statusBtn}
-                    ${payBtn}
-                    ${viewBtn}
-                    ${printBtn}
-                    ${cancelBtn}
-                </div>
-            </div>
+                <td class="px-6 py-4 text-right">
+                    <div class="flex items-center justify-end gap-1">
+                        ${actionButtons}
+                    </div>
+                </td>
+            </tr>
         `;
     }).join('');
 }
@@ -641,63 +705,224 @@ function renderMeasuresInputs() {
 window.updateLocalMeasure = (input) => { const cat = input.dataset.category; const key = input.dataset.key; if(!currentMeasures[cat]) currentMeasures[cat] = {}; currentMeasures[cat][key] = input.value; };
 
 window.saveOrder = async () => {
+    // 1. Validaciones
     if (!clientSelect.value) { alert("Seleccione un cliente"); return; }
-    if (orderItems.length === 0) { alert("Agregue prendas"); return; }
-    if (!deadlineInput.value) { alert("Defina fecha entrega"); return; }
+    if (orderItems.length === 0) { alert("Agregue al menos una prenda a la orden"); return; }
+    if (!deadlineInput.value) { alert("Defina la fecha de entrega"); return; }
+
     const rawAdvance = advanceInput.value.replace(/\D/g, '');
     const advance = parseInt(rawAdvance) || 0;
-    if (advance > 0 && !targetAccountSelect.value) { alert("Seleccione cuenta de destino para el anticipo."); return; }
-    if(!confirm("¿Generar orden?")) return;
+
+    if (advance > 0 && !targetAccountSelect.value) { 
+        alert("Seleccione la cuenta de destino para el anticipo."); 
+        return; 
+    }
+
+    // 2. Obtener datos del Responsable (NUEVO)
+    const respId = responsableSelect.value;
+    // Obtenemos el texto (nombre) del option seleccionado para no tener que consultarlo luego
+    const respName = responsableSelect.options[responsableSelect.selectedIndex]?.text || "Sin Asignar";
+
+    if(!confirm("¿Confirmar y generar orden?")) return;
+
+    // UI Feedback (Opcional, para evitar doble click)
+    const saveBtn = document.querySelector('#orderModal .btn-primary');
+    const originalBtnText = saveBtn.innerHTML;
+    saveBtn.disabled = true;
+    saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Procesando...';
 
     try {
         await runTransaction(db, async (transaction) => {
             const isEdit = orderIdInput.value !== "";
-            let orderRef; let orderNumber;
+            let orderRef; 
+            let orderNumber;
+            
+            // Calculamos el total sumando los items
             const totalAmount = orderItems.reduce((sum, i) => sum + i.totalPrice, 0);
 
-            if (isEdit) { orderRef = doc(db, "orders", orderIdInput.value); } 
-            else {
+            // A. Definir Referencia y Número de Orden
+            if (isEdit) { 
+                orderRef = doc(db, "orders", orderIdInput.value); 
+                // En edición no cambiamos el número
+            } else {
+                // Si es nueva, obtenemos el contador atómico
                 const counterRef = doc(db, "counters", "orders");
                 const counterSnap = await transaction.get(counterRef);
+                
                 let nextId = 1;
-                if (counterSnap.exists()) nextId = counterSnap.data().current + 1;
+                if (counterSnap.exists()) {
+                    nextId = counterSnap.data().current + 1;
+                }
+                
+                // Actualizamos contador
                 transaction.set(counterRef, { current: nextId }, { merge: true });
-                orderNumber = nextId; orderRef = doc(collection(db, "orders"));
+                
+                orderNumber = nextId; 
+                orderRef = doc(collection(db, "orders")); // Nueva referencia auto-ID
             }
 
+            // B. Preparar Objeto de Datos
             const orderData = {
                 clientId: clientSelect.value,
                 clientName: clientSelect.options[clientSelect.selectedIndex].text,
                 deadline: deadlineInput.value,
                 status: statusInput.value,
-                items: orderItems,
-                appliedMeasures: currentMeasures,
+                items: orderItems,              // Array de prendas
+                appliedMeasures: currentMeasures, // Objeto de medidas
                 totalAmount: totalAmount,
                 notes: orderNotesInput.value,
+                
+                // --- NUEVOS CAMPOS ---
+                responsableId: respId,
+                responsableName: respName,
+                // ---------------------
+
                 updatedAt: serverTimestamp()
             };
 
+            // C. Lógica específica para NUEVA ORDEN (Anticipos y Creación)
             if (!isEdit) {
                 orderData.createdAt = serverTimestamp();
                 orderData.orderNumber = orderNumber;
                 orderData.advancePayment = advance;
-                orderData.balanceDue = totalAmount - advance;
+                orderData.balanceDue = totalAmount - advance; // Deuda inicial
                 orderData.paymentAccount = targetAccountSelect.value || null;
-                if (advance > 0) orderData.paymentHistory = [{ amount: advance, accountId: targetAccountSelect.value, date: new Date().toISOString(), type: 'advance' }];
+                
+                // Historial de pagos inicial
+                if (advance > 0) {
+                    orderData.paymentHistory = [{ 
+                        amount: advance, 
+                        accountId: targetAccountSelect.value, 
+                        date: new Date().toISOString(), 
+                        type: 'advance' 
+                    }];
+                }
+
+                // Guardar Orden
                 transaction.set(orderRef, orderData);
+
+                // D. Mover Dinero (Si hubo anticipo)
                 if (advance > 0) {
                     const accRef = doc(db, "accounts", targetAccountSelect.value);
+                    
+                    // 1. Sumar saldo a la cuenta
                     transaction.update(accRef, { balance: increment(advance) });
+                    
+                    // 2. Crear registro en Tesorería
                     const logRef = doc(collection(db, "transactions"));
-                    transaction.set(logRef, { accountId: targetAccountSelect.value, type: 'income', amount: advance, description: `Anticipo Orden #${orderNumber}`, date: serverTimestamp() });
+                    transaction.set(logRef, { 
+                        accountId: targetAccountSelect.value, 
+                        type: 'income', 
+                        amount: advance, 
+                        description: `Anticipo Orden #${orderNumber} - ${orderData.clientName}`, 
+                        relatedDocId: orderRef.id, // ID de la orden recién creada (si es auto-id funciona igual)
+                        date: serverTimestamp() 
+                    });
                 }
-            } else { transaction.update(orderRef, orderData); }
+
+            } else { 
+                // Lógica para EDICIÓN (Update simple)
+                // Nota: En edición no solemos recalcular el balanceDue automáticamente 
+                // para no romper pagos parciales previos, a menos que sea una regla de negocio estricta.
+                // Aquí solo actualizamos datos básicos.
+                transaction.update(orderRef, orderData); 
+            }
         });
-        closeModal(); alert("Orden generada exitosamente."); loadOrders('reset');
-    } catch (error) { console.error("Error:", error); alert("Error al procesar: " + error.message); }
+
+        // Éxito
+        closeModal(); 
+        alert("Orden guardada exitosamente."); 
+        loadOrders('reset');
+
+    } catch (error) {
+        console.error("Error al guardar:", error);
+        alert("Error al procesar la orden: " + error.message);
+    } finally {
+        // Restaurar botón
+        saveBtn.disabled = false;
+        saveBtn.innerHTML = originalBtnText;
+    }
 };
 
 window.formatCurrencyInput = (input) => { let value = input.value.replace(/\D/g, ''); if (value === '') { input.value = ''; return; } input.value = new Intl.NumberFormat('es-CO').format(parseInt(value)); };
-window.openModal = () => { orderIdInput.value = ""; clientSelect.value = ""; clientInfoBox.classList.add('hidden'); currentMeasures = {}; orderItems = []; activeTab = 'chaqueta'; inventorySearch.value = ""; selectedInventoryId.value = ""; addItemDesc.value = ""; addItemDesc.readOnly = false; addItemQty.value = "1"; addItemPrice.value = ""; addItemNotes.value = ""; selectedSizeInput.value = ""; sizeSelectorContainer.classList.add('hidden'); sizeButtons.innerHTML = ""; imgPreviewContainer.classList.add('hidden'); advanceInput.value = ""; targetAccountSelect.value = ""; renderMeasuresInputs(); renderOrderItems(); orderNotesInput.value = ""; statusInput.value = "recibido"; modalTitle.textContent = "Nueva Orden"; modal.classList.remove('hidden'); modal.classList.add('flex'); };
+window.openModal = () => {
+    // 1. Resetear inputs de texto y selects básicos
+    orderIdInput.value = "";
+    clientSelect.value = "";
+    clientInfoBox.classList.add('hidden');
+    deadlineInput.value = "";
+    statusInput.value = "recibido";
+    orderNotesInput.value = "";
+    
+    // 2. Resetear lógica interna (Medidas e Ítems)
+    currentMeasures = {};
+    orderItems = [];
+    activeTab = 'chaqueta'; // Pestaña por defecto
+    
+    // 3. Resetear sección de agregar productos
+    inventorySearch.value = "";
+    selectedInventoryId.value = "";
+    addItemDesc.value = "";
+    addItemDesc.readOnly = false;
+    addItemQty.value = "1";
+    addItemPrice.value = "";
+    addItemNotes.value = "";
+    selectedSizeInput.value = "";
+    sizeSelectorContainer.classList.add('hidden');
+    sizeButtons.innerHTML = "";
+    imgPreviewContainer.classList.add('hidden');
+    imgPreviewSrc.src = "";
+    
+    // 4. Resetear sección financiera (Anticipo)
+    advanceInput.value = "";
+    targetAccountSelect.value = "";
+    
+    // 5. Renderizar UI limpia
+    renderMeasuresInputs();
+    renderOrderItems();
+    showMeasureTab('chaqueta'); // Asegurar estilo de tab activo
+
+    // 6. --- LÓGICA DE RESPONSABLE (NUEVO) ---
+    if (currentUserInfo) {
+        // Por defecto, seleccionamos al usuario logueado
+        responsableSelect.value = currentUserInfo.uid;
+
+        // Lógica de Bloqueo: Solo ADMIN puede cambiar el responsable
+        if (currentUserInfo.role === 'admin') {
+            responsableSelect.disabled = false;
+            responsableSelect.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-gray-800');
+            responsableSelect.classList.add('bg-gray-900');
+        } else {
+            responsableSelect.disabled = true;
+            responsableSelect.classList.add('opacity-50', 'cursor-not-allowed', 'bg-gray-800');
+            responsableSelect.classList.remove('bg-gray-900');
+        }
+    }
+
+    // 7. Mostrar el modal
+    modalTitle.textContent = "Nueva Orden";
+    modal.classList.remove('hidden');
+    modal.classList.add('flex');
+};
 window.closeModal = () => { modal.classList.add('hidden'); modal.classList.remove('flex'); };
 window.deleteOrder = async (id) => { if(confirm("¿Eliminar orden?")) await deleteDoc(doc(db, "orders", id)); };
+
+async function loadUsersForSelect() {
+    try {
+        const q = query(collection(db, "users"), orderBy("name")); // Asegúrate de importar 'orderBy' y 'collection'
+        const snap = await getDocs(q);
+        
+        responsableSelect.innerHTML = '';
+        snap.forEach(doc => {
+            const u = doc.data();
+            // Creamos la opción
+            const opt = document.createElement('option');
+            opt.value = doc.id; // UID
+            opt.text = u.name || u.email;
+            responsableSelect.appendChild(opt);
+        });
+    } catch (e) {
+        console.error("Error cargando usuarios:", e);
+        responsableSelect.innerHTML = '<option value="">Error carga</option>';
+    }
+}

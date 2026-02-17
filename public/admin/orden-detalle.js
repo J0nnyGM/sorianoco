@@ -2,6 +2,22 @@ import { auth, db, onAuthStateChanged } from '../js/firebase-init.js';
 import { doc, getDoc, updateDoc, collection, getDocs, runTransaction, arrayUnion, writeBatch, increment, serverTimestamp, query, where } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 import { updateSidebarUser } from '../js/global-components.js';
 
+// --- CONFIGURACIÓN DE ESTADOS (Igual que en ordenes.js) ---
+const statusLabels = {
+    'recibido': 'Recibido',
+    'en_proceso': 'En Proceso',
+    'procesado': 'Procesado',
+    'entregado': 'Entregado',
+    'anulada': 'Anulada'
+};
+
+const statusColors = {
+    'recibido': 'bg-gray-800 text-gray-300 border-gray-600',
+    'en_proceso': 'bg-blue-900/40 text-blue-300 border-blue-800',
+    'procesado': 'bg-purple-900/40 text-purple-300 border-purple-800',
+    'entregado': 'bg-green-900/40 text-green-300 border-green-800',
+    'anulada': 'bg-red-900/40 text-red-300 border-red-800'
+};
 // --- ELEMENTOS DOM ---
 const orderTitle = document.getElementById('orderTitle');
 const orderStatusBadge = document.getElementById('orderStatusBadge');
@@ -87,10 +103,24 @@ async function loadOrderDetails() {
 function renderHeader(data) {
     orderTitle.textContent = `Orden #${data.orderNumber}`;
     clientInfo.textContent = `Cliente: ${data.clientName}`;
+    
     statusSelect.value = data.status;
-    orderStatusBadge.textContent = data.status.toUpperCase();
+
+    // Badge colores (del paso anterior)
+    const colorClass = statusColors[data.status] || 'bg-gray-800 text-gray-400';
+    orderStatusBadge.className = `px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${colorClass}`;
+    orderStatusBadge.textContent = statusLabels[data.status] || data.status;
+
     dateDeadline.textContent = data.deadline;
-    // responsableName.textContent = data.assignedTo || "Sin asignar";
+    
+    // --- AQUÍ EL CAMBIO ---
+    // Si existe el campo responsableName lo mostramos, si no, mostramos "Sin asignar"
+    if (responsableName) {
+        responsableName.textContent = data.responsableName || "Sin asignar";
+        
+        // Opcional: Si quieres un icono o estilo
+        if(!data.responsableName) responsableName.classList.add('text-gray-600', 'italic');
+    }
 }
 
 // A. PRENDAS VENDIDAS
@@ -351,14 +381,37 @@ window.formatCurrencyInput = (input) => {
     input.value = new Intl.NumberFormat('es-CO').format(parseInt(val)); 
 };
 
-// Update Status
+// UPDATE STATUS (Pequeña mejora visual al guardar)
 updateStatusBtn.addEventListener('click', async () => {
     const newStatus = statusSelect.value;
+    const originalContent = updateStatusBtn.innerHTML;
+
     try {
-        updateStatusBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-        await updateDoc(doc(db, "orders", orderId), { status: newStatus });
-        orderStatusBadge.textContent = newStatus.toUpperCase();
+        updateStatusBtn.disabled = true;
+        updateStatusBtn.innerHTML = '<i class="fas fa-circle-notch fa-spin"></i>';
+        
+        await updateDoc(doc(db, "orders", orderId), { 
+            status: newStatus,
+            updatedAt: serverTimestamp()
+        });
+        
+        // Actualizar visualmente sin recargar
+        const colorClass = statusColors[newStatus] || 'bg-gray-800 text-gray-400';
+        const labelText = statusLabels[newStatus] || newStatus;
+        orderStatusBadge.className = `px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider border ${colorClass}`;
+        orderStatusBadge.textContent = labelText;
+
+        // Feedback botón
         updateStatusBtn.innerHTML = '<i class="fas fa-check text-green-500"></i>';
-        setTimeout(() => updateStatusBtn.innerHTML = '<i class="fas fa-save"></i>', 2000);
-    } catch (error) { console.error(error); }
+        setTimeout(() => {
+            updateStatusBtn.innerHTML = originalContent;
+            updateStatusBtn.disabled = false;
+        }, 2000);
+
+    } catch (error) { 
+        console.error(error);
+        alert("Error al actualizar estado");
+        updateStatusBtn.innerHTML = originalContent;
+        updateStatusBtn.disabled = false;
+    }
 });

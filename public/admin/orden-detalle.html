@@ -32,14 +32,12 @@
                     <div class="flex items-center gap-2 bg-gray-900 p-2 rounded-lg border border-gray-800">
                         <label class="text-xs text-gray-500 uppercase font-bold mr-2">Estado:</label>
                         <select id="statusSelect" class="bg-black text-white text-sm border border-gray-700 rounded p-1 focus:border-soriano-red outline-none">
-                            <option value="diseno">Diseño</option>
-                            <option value="corte">Corte</option>
-                            <option value="confeccion">Confección</option>
-                            <option value="prueba">Prueba</option>
-                            <option value="terminado">Terminado</option>
+                            <option value="recibido">Recibido</option>
+                            <option value="en_proceso">En Proceso</option>
+                            <option value="procesado">Procesado</option>
                             <option value="entregado">Entregado</option>
-                        </select>
-                        <button id="updateStatusBtn" class="text-soriano-gold hover:text-white transition px-2">
+                            <option value="anulada" disabled>Anulada</option> </select>
+                        <button id="updateStatusBtn" class="text-soriano-gold hover:text-white transition px-2" title="Guardar Cambio">
                             <i class="fas fa-save"></i>
                         </button>
                     </div>

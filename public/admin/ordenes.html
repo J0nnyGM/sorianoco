@@ -39,20 +39,31 @@
             </div>
 
             <div class="flex flex-col h-full justify-between">
-                <div class="hidden md:flex px-6 pb-2 text-[10px] uppercase text-gray-500 font-bold tracking-wider">
-                    <div class="w-32">Orden</div>
-                    <div class="w-1/4">Cliente</div>
-                    <div class="flex-1">Detalle</div>
-                    <div class="w-24 text-center">Entrega</div>
-                    <div class="w-24 text-right">Saldo</div>
-                    <div class="w-auto ml-auto text-right">Acciones</div>
+                
+                <div class="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden shadow-sm mb-4">
+                    <div class="overflow-x-auto"> <table class="w-full text-left border-collapse">
+                            <thead class="bg-black/40 text-[10px] uppercase text-gray-500 font-bold tracking-wider">
+                                <tr>
+                                    <th class="px-6 py-4 border-b border-gray-800">Orden / Estado</th>
+                                    <th class="px-6 py-4 border-b border-gray-800">Cliente</th>
+                                    <th class="px-6 py-4 border-b border-gray-800 hidden md:table-cell">Detalle</th>
+                                    <th class="px-6 py-4 border-b border-gray-800 text-center hidden md:table-cell">Entrega</th>
+                                    <th class="px-6 py-4 border-b border-gray-800 text-right">Saldo</th>
+                                    <th class="px-6 py-4 border-b border-gray-800 text-right">Acciones</th>
+                                </tr>
+                            </thead>
+                            <tbody id="ordersGrid" class="divide-y divide-gray-800 text-sm text-gray-300">
+                                <tr>
+                                    <td colspan="6" class="px-6 py-12 text-center text-gray-500">
+                                        <i class="fas fa-circle-notch fa-spin mr-2"></i> Cargando órdenes...
+                                    </td>
+                                </tr>
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
 
-                <div id="ordersGrid" class="flex flex-col gap-3 mb-8">
-                    <div class="col-span-full text-center py-12 text-gray-500"><i class="fas fa-circle-notch fa-spin mr-2"></i> Cargando...</div>
-                </div>
-
-                <div class="bg-gray-900 border border-gray-800 rounded-lg p-4 flex justify-between items-center" id="paginationControls">
+                <div class="bg-gray-900 border border-gray-800 rounded-lg p-4 flex justify-between items-center mt-auto" id="paginationControls">
                     <span class="text-xs text-gray-500" id="pageIndicator">Página 1</span>
                     <div class="flex space-x-2">
                         <button id="prevPageBtn" class="px-3 py-1 bg-gray-800 border border-gray-700 rounded text-gray-400 text-xs hover:text-white disabled:opacity-50"><i class="fas fa-chevron-left mr-1"></i> Anterior</button>
@@ -64,81 +75,196 @@
     </div>
 
     <div id="orderModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-50 backdrop-blur-sm p-4 overflow-y-auto">
-        <div class="bg-gray-900 border border-gray-700 rounded-lg w-full max-w-6xl shadow-2xl my-4 flex flex-col max-h-[95vh]">
-            <div class="p-5 border-b border-gray-800 flex justify-between items-center bg-gray-900 rounded-t-lg flex-shrink-0">
-                <div><h3 class="text-xl font-serif text-white" id="modalTitle">Nueva Orden</h3></div>
-                <button onclick="closeModal()" class="text-gray-400 hover:text-white transition"><i class="fas fa-times"></i></button>
+        <div class="bg-soriano-dark border border-gray-700 rounded-xl w-full max-w-5xl shadow-2xl my-4 flex flex-col relative">
+            
+            <div class="px-6 py-4 border-b border-gray-800 flex justify-between items-center bg-gray-900/50 rounded-t-xl sticky top-0 z-10 backdrop-blur-md">
+                <div>
+                    <h3 class="text-xl font-serif text-white flex items-center gap-2">
+                        <i class="fas fa-clipboard-list text-soriano-gold"></i> 
+                        <span id="modalTitle">Nueva Orden</span>
+                    </h3>
+                </div>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white transition bg-gray-800 hover:bg-red-900 w-8 h-8 rounded-full flex items-center justify-center">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
-            <div class="flex-1 overflow-y-auto p-6 custom-scrollbar">
-                <form id="orderForm" class="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+            <div class="flex-1 overflow-y-auto p-6 custom-scrollbar bg-[#0f0f10]">
+                <form id="orderForm" class="space-y-6">
                     <input type="hidden" id="orderId">
-                    <div class="lg:col-span-4 space-y-6 border-r border-gray-800 pr-0 lg:pr-6">
-                        <div>
-                            <label class="block text-xs text-gray-400 mb-1 uppercase font-bold text-soriano-gold">1. Cliente</label>
-                            <select id="clientSelect" required class="input-soriano appearance-none mb-2"><option value="">Seleccionar...</option></select>
-                            <div id="clientInfoBox" class="text-xs text-gray-500 hidden"><p><i class="fas fa-phone mr-1"></i> <span id="infoPhone">-</span></p></div>
-                        </div>
-                        <div class="grid grid-cols-2 gap-3">
-                            <div><label class="block text-[10px] text-gray-500 uppercase">Fecha Entrega</label><input type="date" id="deadline" required class="input-soriano text-sm py-2"></div>
-                            <div><label class="block text-[10px] text-gray-500 uppercase">Estado Inicial</label>
-                                <select id="status" class="input-soriano text-sm py-2 appearance-none">
-                                    <option value="recibido">Recibido</option><option value="en_proceso">En Proceso</option><option value="procesado">Procesado</option><option value="entregado">Entregado</option>
+
+                    <div class="bg-gray-900/30 p-4 rounded-lg border border-gray-800">
+                        <div class="grid grid-cols-1 md:grid-cols-12 gap-4">
+                            <div class="md:col-span-5 relative">
+                                <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1">Cliente</label>
+                                <select id="clientSelect" required class="input-soriano appearance-none w-full bg-black border-gray-700 focus:border-soriano-gold">
+                                    <option value="">Seleccionar Cliente...</option>
+                                </select>
+                                <div id="clientInfoBox" class="absolute right-0 top-0 text-xs text-soriano-gold hidden flex items-center gap-1 bg-black/50 px-2 rounded">
+                                    <i class="fas fa-phone"></i> <span id="infoPhone">-</span>
+                                </div>
+                            </div>
+
+                            <div class="md:col-span-3">
+                                <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1">Responsable</label>
+                                <select id="responsableSelect" class="input-soriano appearance-none w-full bg-black border-gray-700 text-gray-300">
+                                    <option value="">Cargando...</option>
+                                </select>
+                            </div>
+
+                            <div class="md:col-span-2">
+                                <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1">Entrega</label>
+                                <input type="date" id="deadline" required class="input-soriano w-full text-center text-sm py-2 bg-black border-gray-700">
+                            </div>
+
+                            <div class="md:col-span-2">
+                                <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1">Estado</label>
+                                <select id="status" class="input-soriano appearance-none w-full text-center bg-black border-gray-700">
+                                    <option value="recibido">Recibido</option>
+                                    <option value="en_proceso">En Proceso</option>
+                                    <option value="procesado">Procesado</option>
+                                    <option value="entregado">Entregado</option>
                                 </select>
                             </div>
                         </div>
-                        <div class="bg-black/20 p-4 rounded border border-gray-700/50">
-                            <div class="flex justify-between items-center mb-3"><h4 class="text-xs font-bold text-white uppercase">Medidas</h4></div>
-                            <div class="flex space-x-2 border-b border-gray-700 mb-3 overflow-x-auto pb-1" id="measureTabs">
-                                <button type="button" onclick="showMeasureTab('chaqueta')" class="measure-tab text-[10px] uppercase px-2 py-1 text-soriano-red border-b-2 border-soriano-red font-bold">Chaqueta</button>
-                                <button type="button" onclick="showMeasureTab('pantalon')" class="measure-tab text-[10px] uppercase px-2 py-1 text-gray-500 hover:text-white">Pantalón</button>
-                                <button type="button" onclick="showMeasureTab('camisa')" class="measure-tab text-[10px] uppercase px-2 py-1 text-gray-500 hover:text-white">Camisa</button>
-                                <button type="button" onclick="showMeasureTab('chaleco')" class="measure-tab text-[10px] uppercase px-2 py-1 text-gray-500 hover:text-white">Chaleco</button>
+                    </div>
+
+                    <div class="border border-gray-800 rounded-lg overflow-hidden">
+                        <div class="bg-gray-900/50 px-4 py-2 border-b border-gray-800 flex justify-between items-center">
+                            <span class="text-xs font-bold text-gray-400 uppercase tracking-wider"><i class="fas fa-ruler-combined mr-2"></i>Medidas (Referencia)</span>
+                            <div class="flex space-x-1" id="measureTabs">
+                                <button type="button" onclick="showMeasureTab('chaqueta')" class="measure-tab px-3 py-1 text-[10px] uppercase font-bold rounded hover:bg-gray-700 transition text-soriano-red bg-gray-800">Chaqueta</button>
+                                <button type="button" onclick="showMeasureTab('pantalon')" class="measure-tab px-3 py-1 text-[10px] uppercase font-bold rounded hover:bg-gray-700 transition text-gray-500">Pantalón</button>
+                                <button type="button" onclick="showMeasureTab('camisa')" class="measure-tab px-3 py-1 text-[10px] uppercase font-bold rounded hover:bg-gray-700 transition text-gray-500">Camisa</button>
+                                <button type="button" onclick="showMeasureTab('chaleco')" class="measure-tab px-3 py-1 text-[10px] uppercase font-bold rounded hover:bg-gray-700 transition text-gray-500">Chaleco</button>
                             </div>
-                            <div id="measuresContainer" class="grid grid-cols-2 gap-2"><p class="text-xs text-gray-500 col-span-2 text-center py-4">Seleccione cliente.</p></div>
+                        </div>
+                        <div class="bg-black/20 p-4">
+                            <div id="measuresContainer" class="grid grid-cols-3 md:grid-cols-6 gap-3">
+                                <p class="text-xs text-gray-500 col-span-full text-center italic">Seleccione un cliente para cargar medidas.</p>
+                            </div>
                         </div>
                     </div>
-                    <div class="lg:col-span-8 space-y-6">
-                        <div class="bg-gray-800/30 p-4 rounded border border-gray-700">
-                            <label class="block text-xs text-gray-400 mb-2 uppercase font-bold text-soriano-gold">2. Agregar Prendas</label>
-                            <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
-                                <div class="md:col-span-4 relative group">
-                                    <label class="block text-[10px] text-gray-500 uppercase">Buscar</label>
-                                    <input type="text" id="inventorySearch" class="input-soriano text-sm py-2" placeholder="Buscar..." autocomplete="off">
-                                    <input type="hidden" id="selectedInventoryId"> 
-                                    <div id="inventoryList" class="hidden absolute z-50 w-full bg-gray-900 border border-gray-700 rounded shadow-xl max-h-60 overflow-y-auto mt-1 custom-scrollbar"></div>
+
+                    <div class="space-y-4">
+                        <div class="flex items-center gap-2 mb-2">
+                            <span class="h-px bg-gray-800 flex-1"></span>
+                            <span class="text-xs font-bold text-soriano-gold uppercase tracking-widest">Detalle de la Orden</span>
+                            <span class="h-px bg-gray-800 flex-1"></span>
+                        </div>
+
+                        <div class="bg-gray-800/40 p-4 rounded-lg border border-gray-700/50 shadow-inner">
+                            <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
+                                
+                                <div class="md:col-span-5 relative group">
+                                    <label class="block text-[10px] text-gray-500 uppercase mb-1">Buscar Prenda / Tela</label>
+                                    <div class="relative">
+                                        <i class="fas fa-search absolute left-3 top-2.5 text-gray-500"></i>
+                                        <input type="text" id="inventorySearch" class="input-soriano pl-9 py-2 text-sm w-full bg-black border-gray-600 focus:border-white transition" placeholder="Escriba para buscar..." autocomplete="off">
+                                    </div>
+                                    <input type="hidden" id="selectedInventoryId">
+                                    <div id="inventoryList" class="hidden absolute z-50 w-full bg-gray-900 border border-gray-600 rounded-b shadow-2xl max-h-60 overflow-y-auto custom-scrollbar"></div>
                                 </div>
-                                <div class="md:col-span-4"><label class="block text-[10px] text-gray-500 uppercase">Descripción</label><input type="text" id="addItemDesc" class="input-soriano text-sm py-2"></div>
-                                <div class="md:col-span-2"><label class="block text-[10px] text-gray-500 uppercase">Cant.</label><input type="number" id="addItemQty" class="input-soriano text-sm py-2 text-center" value="1"></div>
-                                <div class="md:col-span-2"><label class="block text-[10px] text-gray-500 uppercase">Valor</label><input type="text" id="addItemPrice" class="input-soriano text-sm py-2 text-right" oninput="formatCurrencyInput(this)"></div>
+
+                                <div class="md:col-span-4">
+                                    <label class="block text-[10px] text-gray-500 uppercase mb-1">Descripción Item</label>
+                                    <input type="text" id="addItemDesc" class="input-soriano py-2 text-sm w-full bg-black border-gray-600" placeholder="Ej. Traje dos piezas...">
+                                </div>
+
+                                <div class="md:col-span-1">
+                                    <label class="block text-[10px] text-gray-500 uppercase mb-1 text-center">Cant.</label>
+                                    <input type="number" id="addItemQty" class="input-soriano py-2 text-sm w-full text-center bg-black border-gray-600 font-bold" value="1">
+                                </div>
+
+                                <div class="md:col-span-2">
+                                    <label class="block text-[10px] text-gray-500 uppercase mb-1 text-right">Valor Unit.</label>
+                                    <input type="text" id="addItemPrice" class="input-soriano py-2 text-sm w-full text-right bg-black border-gray-600 text-green-400 font-mono" placeholder="$0" oninput="formatCurrencyInput(this)">
+                                </div>
                             </div>
-                            <div id="sizeSelectorContainer" class="mt-3 hidden border-t border-gray-700 pt-2"><div id="sizeButtons" class="flex flex-wrap gap-2"></div><input type="hidden" id="selectedSize"></div>
-                            <div class="grid grid-cols-12 gap-3 mt-3">
-                                <div class="col-span-10"><input type="text" id="addItemNotes" class="input-soriano text-xs py-1" placeholder="Notas..."></div>
-                                <div class="col-span-2"><button type="button" onclick="addItemToOrder()" class="w-full bg-gray-700 hover:bg-gray-600 text-white py-2 rounded border border-gray-600 shadow-lg">+</button></div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-12 gap-4 mt-3 items-start">
+                                <div class="md:col-span-5" id="sizeSelectorContainer">
+                                    <div id="sizeButtons" class="flex flex-wrap gap-2"></div>
+                                    <input type="hidden" id="selectedSize">
+                                </div>
+                                
+                                <div class="md:col-span-5">
+                                    <input type="text" id="addItemNotes" class="input-soriano py-2 text-xs w-full bg-black/50 border-gray-700 italic" placeholder="Notas internas del ítem (Opcional)...">
+                                </div>
+
+                                <div class="md:col-span-2">
+                                    <button type="button" onclick="addItemToOrder()" class="w-full bg-gray-700 hover:bg-soriano-gold hover:text-black text-white py-2 rounded border border-gray-600 shadow transition font-bold uppercase text-xs flex items-center justify-center gap-2 h-9">
+                                        <i class="fas fa-plus"></i> Agregar
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div id="productImagePreview" class="hidden mt-2 p-2 bg-black rounded border border-gray-800 w-fit">
+                                <img id="imgPreviewSrc" src="" class="h-16 w-16 object-cover rounded">
                             </div>
                         </div>
-                        <div class="border border-gray-800 rounded overflow-hidden min-h-[150px]">
+
+                        <div class="border border-gray-800 rounded-lg overflow-hidden shadow-lg">
                             <table class="w-full text-left text-sm">
-                                <thead class="bg-gray-900/50 text-gray-500 uppercase text-xs"><tr><th class="p-3">Cant</th><th class="p-3">Prenda</th><th class="p-3 text-right">Total</th><th class="p-3"></th></tr></thead>
-                                <tbody id="orderItemsBody" class="divide-y divide-gray-800 bg-black/20 text-gray-300"></tbody>
-                                <tfoot class="bg-gray-900 font-bold text-white"><tr><td colspan="2" class="p-3 text-right">Total</td><td class="p-3 text-right text-soriano-gold text-lg" id="orderTotalDisplay">$0</td><td></td></tr></tfoot>
+                                <thead class="bg-gray-900 text-gray-500 uppercase text-[10px] tracking-wider font-bold">
+                                    <tr>
+                                        <th class="p-3 text-center w-16">Cant</th>
+                                        <th class="p-3 w-10">Tipo</th>
+                                        <th class="p-3">Descripción / Notas</th>
+                                        <th class="p-3 text-right">Subtotal</th>
+                                        <th class="p-3 w-10"></th>
+                                    </tr>
+                                </thead>
+                                <tbody id="orderItemsBody" class="divide-y divide-gray-800 bg-black/30 text-gray-300">
+                                    </tbody>
+                                <tfoot class="bg-gray-900/80 backdrop-blur font-bold text-white border-t border-gray-700">
+                                    <tr>
+                                        <td colspan="3" class="p-4 text-right text-xs uppercase text-gray-400">Total Orden</td>
+                                        <td class="p-4 text-right text-soriano-gold text-xl font-serif" id="orderTotalDisplay">$0</td>
+                                        <td></td>
+                                    </tr>
+                                </tfoot>
                             </table>
                         </div>
-                        <div id="productImagePreview" class="hidden flex items-center justify-center p-2 bg-black/20 rounded mt-2"><img id="imgPreviewSrc" src="" class="h-20 w-auto object-contain rounded border border-gray-600 shadow-sm"></div>
-                        <div class="bg-gray-800/30 p-4 rounded border border-gray-700 mt-4">
-                            <label class="block text-xs text-gray-400 mb-2 uppercase font-bold text-green-500">Pago Inicial</label>
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                <div><label class="block text-[10px] text-gray-500 uppercase">Abono ($)</label><input type="text" id="advancePayment" class="input-soriano text-right font-bold text-white" placeholder="$0" oninput="formatCurrencyInput(this)"></div>
-                                <div><label class="block text-[10px] text-gray-500 uppercase">Cuenta</label><select id="targetAccount" class="input-soriano appearance-none"><option value="">Seleccionar...</option></select></div>
-                            </div>
-                        </div>
-                        <div class="mt-4"><label class="block text-xs text-gray-400 mb-1 uppercase">Observaciones</label><textarea id="orderNotes" rows="2" class="input-soriano text-sm"></textarea></div>
                     </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6 pt-4 border-t border-gray-800">
+                        
+                        <div>
+                            <label class="block text-xs text-gray-400 mb-2 uppercase font-bold">Observaciones Generales</label>
+                            <textarea id="orderNotes" rows="3" class="input-soriano w-full text-sm bg-black border-gray-700 resize-none" placeholder="Instrucciones especiales para el taller..."></textarea>
+                        </div>
+
+                        <div class="bg-gray-900/40 p-4 rounded border border-gray-800">
+                            <label class="block text-xs text-green-500 mb-3 uppercase font-bold flex items-center gap-2">
+                                <i class="fas fa-money-bill-wave"></i> Registro de Anticipo
+                            </label>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-[10px] text-gray-500 uppercase mb-1">Monto Abono ($)</label>
+                                    <input type="text" id="advancePayment" class="input-soriano w-full text-right font-bold text-white bg-black border-gray-600 focus:border-green-500" placeholder="$0" oninput="formatCurrencyInput(this)">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] text-gray-500 uppercase mb-1">Cuenta Destino</label>
+                                    <select id="targetAccount" class="input-soriano appearance-none w-full bg-black border-gray-600">
+                                        <option value="">Seleccionar...</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <p class="text-[10px] text-gray-500 mt-2 italic text-right">* Si se deja en $0, la orden queda como "Pendiente de Pago".</p>
+                        </div>
+                    </div>
+
                 </form>
             </div>
-            <div class="p-5 border-t border-gray-800 bg-gray-900 flex justify-between items-center rounded-b-lg flex-shrink-0">
-                <div class="text-xs text-gray-500">* Medidas no afectan ficha original.</div>
-                <div class="flex space-x-3"><button type="button" onclick="closeModal()" class="px-4 py-2 text-gray-400 hover:text-white text-sm">Cancelar</button><button type="button" onclick="saveOrder()" class="btn-primary">Generar Orden</button></div>
+
+            <div class="p-4 border-t border-gray-800 bg-gray-900 flex justify-between items-center rounded-b-xl sticky bottom-0 z-10">
+                <button type="button" onclick="closeModal()" class="px-6 py-2 text-gray-400 hover:text-white text-sm transition font-medium">
+                    Cancelar
+                </button>
+                <button type="button" onclick="saveOrder()" class="btn-primary shadow-lg shadow-red-900/20 px-8 py-2">
+                    <i class="fas fa-save mr-2"></i> Generar Orden
+                </button>
             </div>
         </div>
     </div>
