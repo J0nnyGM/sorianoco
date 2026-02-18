@@ -7,6 +7,11 @@
     <link href="../css/styles.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="icon" href="data:,">
+    <style>
+        /* Ajuste para input number */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    </style>
 </head>
 <body class="bg-soriano-dark text-gray-300 font-sans antialiased">
 
@@ -22,9 +27,7 @@
                     <div>
                         <div class="flex items-center gap-3 mb-1">
                             <h1 class="text-3xl font-serif text-white" id="orderTitle">Cargando...</h1>
-                            <span id="orderStatusBadge" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-gray-800 text-gray-400">
-                                ...
-                            </span>
+                            <span id="orderStatusBadge" class="px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-gray-800 text-gray-400">...</span>
                         </div>
                         <p class="text-gray-400 text-sm" id="clientInfo">...</p>
                     </div>
@@ -36,7 +39,8 @@
                             <option value="en_proceso">En Proceso</option>
                             <option value="procesado">Procesado</option>
                             <option value="entregado">Entregado</option>
-                            <option value="anulada" disabled>Anulada</option> </select>
+                            <option value="anulada" disabled>Anulada</option> 
+                        </select>
                         <button id="updateStatusBtn" class="text-soriano-gold hover:text-white transition px-2" title="Guardar Cambio">
                             <i class="fas fa-save"></i>
                         </button>
@@ -56,14 +60,13 @@
                             <thead class="bg-gray-900/30 text-gray-500 uppercase text-xs">
                                 <tr>
                                     <th class="px-6 py-3 w-16">Img</th>
-                                    <th class="px-6 py-3">Cant</th>
+                                    <th class="px-6 py-3 text-center">Cant</th>
                                     <th class="px-6 py-3">Descripción</th>
                                     <th class="px-6 py-3 text-right">Unitario</th>
                                     <th class="px-6 py-3 text-right">Total</th>
                                 </tr>
                             </thead>
-                            <tbody id="itemsList" class="divide-y divide-gray-800">
-                                </tbody>
+                            <tbody id="itemsList" class="divide-y divide-gray-800"></tbody>
                             <tfoot class="bg-gray-900 font-bold text-white">
                                 <tr>
                                     <td colspan="4" class="px-6 py-4 text-right uppercase text-xs text-gray-400">Valor Total Orden</td>
@@ -77,32 +80,33 @@
                         <div class="p-4 border-b border-gray-800 bg-gray-900/50">
                             <h3 class="text-sm font-bold text-white uppercase"><i class="fas fa-ruler-combined mr-2 text-soriano-gold"></i> Medidas Cliente</h3>
                         </div>
-                        <div id="measuresGrid" class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-                            </div>
+                        <div id="measuresGrid" class="p-4 grid grid-cols-1 md:grid-cols-2 gap-4"></div>
                     </div>
 
-                    <div class="bg-black/40 border border-gray-800 rounded-lg overflow-hidden">
+                    <div class="bg-black/40 border border-gray-800 rounded-lg overflow-hidden shadow-lg">
                         <div class="p-4 border-b border-gray-800 bg-gray-900/50 flex justify-between items-center">
-                            <h3 class="text-sm font-bold text-gray-400 uppercase"><i class="fas fa-cut mr-2"></i> Materiales Usados (Costo)</h3>
-                            <button onclick="openMaterialModal()" class="btn-outline text-xs py-1 px-3">
-                                + Material
+                            <h3 class="text-sm font-bold text-gray-300 uppercase"><i class="fas fa-cut mr-2 text-blue-400"></i> Materiales Usados</h3>
+                            <button onclick="openMaterialModal()" class="btn-outline text-[10px] py-1 px-3 border-gray-600 text-gray-400 hover:text-white hover:border-white uppercase font-bold transition">
+                                <i class="fas fa-plus mr-1"></i> Agregar Material
                             </button>
                         </div>
                         <table class="w-full text-left text-sm">
                             <thead class="bg-gray-900/30 text-gray-500 uppercase text-xs">
                                 <tr>
                                     <th class="px-6 py-3">Material</th>
-                                    <th class="px-6 py-3 text-right">Cant.</th>
-                                    <th class="px-6 py-3 text-right">Costo</th>
+                                    <th class="px-6 py-3 text-right">Cantidad</th>
+                                    <th class="px-6 py-3 text-right">Costo Estimado</th>
+                                    <th class="px-6 py-3 w-10"></th>
                                 </tr>
                             </thead>
-                            <tbody id="materialsList" class="divide-y divide-gray-800">
-                                <tr><td colspan="3" class="p-4 text-center text-xs text-gray-500">No hay materiales registrados.</td></tr>
+                            <tbody id="materialsList" class="divide-y divide-gray-800 text-gray-400">
+                                <tr><td colspan="4" class="p-6 text-center text-xs text-gray-500 italic">No se han registrado materiales consumidos.</td></tr>
                             </tbody>
-                            <tfoot class="bg-gray-900/30 text-gray-400 font-mono text-xs">
+                            <tfoot class="bg-gray-900/30 text-gray-400 font-mono text-xs border-t border-gray-800">
                                 <tr>
-                                    <td colspan="2" class="px-6 py-2 text-right uppercase">Costo Producción:</td>
-                                    <td class="px-6 py-2 text-right" id="totalProductionCost">$0</td>
+                                    <td colspan="2" class="px-6 py-3 text-right uppercase font-bold text-gray-500">Costo Total Producción:</td>
+                                    <td class="px-6 py-3 text-right text-white font-bold" id="totalProductionCost">$0</td>
+                                    <td></td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -111,76 +115,117 @@
 
                 <div class="space-y-6">
                     
-                    <div class="bg-gray-900 border border-gray-700 rounded-lg p-6 shadow-lg">
-                        <div class="flex justify-between items-center mb-4 border-b border-gray-800 pb-2">
-                            <h3 class="text-sm font-bold text-white uppercase tracking-wide">
-                                <i class="fas fa-coins mr-2 text-yellow-500"></i> Estado de Cuenta
+                    <div class="bg-gray-900 border border-gray-700 rounded-lg p-6 shadow-lg relative overflow-hidden">
+                        <div class="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-white/5 to-transparent rounded-bl-full pointer-events-none"></div>
+                        
+                        <div class="flex justify-between items-center mb-6 border-b border-gray-800 pb-3">
+                            <h3 class="text-xs font-bold text-white uppercase tracking-widest flex items-center gap-2">
+                                <i class="fas fa-coins text-yellow-500"></i> Finanzas
                             </h3>
-                            <button onclick="openPayModal()" class="text-[10px] bg-green-900/30 text-green-400 border border-green-900 hover:bg-green-900 hover:text-white px-2 py-1 rounded transition">
-                                <i class="fas fa-plus mr-1"></i> Registrar Abono
+                            <button onclick="openPayModal()" class="text-[10px] bg-green-900/20 text-green-400 border border-green-900/50 hover:bg-green-500 hover:text-white px-3 py-1.5 rounded transition uppercase font-bold tracking-wide shadow-lg shadow-green-900/20">
+                                <i class="fas fa-plus mr-1"></i> Abonar
                             </button>
                         </div>
                         
-                        <div class="space-y-3 text-sm mb-6">
-                            <div class="flex justify-between">
-                                <span class="text-gray-400">Total a Pagar</span>
-                                <span class="text-white font-bold" id="financeTotal">$0</span>
+                        <div class="space-y-4 mb-6">
+                            <div class="flex justify-between items-end">
+                                <span class="text-xs text-gray-500 uppercase">Total Orden</span>
+                                <span class="text-lg text-white font-bold" id="financeTotal">$0</span>
                             </div>
-                            <div class="flex justify-between">
-                                <span class="text-gray-400">Abonado</span>
-                                <span class="text-green-400 font-mono" id="financePaid">$0</span>
+                            <div class="flex justify-between items-end">
+                                <span class="text-xs text-gray-500 uppercase">Pagado</span>
+                                <span class="text-sm text-green-400 font-mono" id="financePaid">$0</span>
                             </div>
-                            <div class="border-t border-gray-700 pt-2 flex justify-between items-center">
-                                <span class="text-gray-400 uppercase text-xs">Saldo Pendiente</span>
-                                <span class="text-xl font-bold text-red-500" id="financeBalance">$0</span>
+                            <div class="border-t border-gray-800 pt-3 flex justify-between items-end">
+                                <span class="text-xs text-gray-400 uppercase font-bold">Saldo Pendiente</span>
+                                <span class="text-2xl font-bold text-red-500 font-serif" id="financeBalance">$0</span>
                             </div>
                         </div>
 
-                        <div class="bg-black/30 rounded p-3 max-h-40 overflow-y-auto custom-scrollbar">
-                            <p class="text-[10px] text-gray-500 uppercase mb-2">Historial de Pagos</p>
-                            <ul id="paymentHistoryList" class="space-y-2 text-xs text-gray-300">
-                                </ul>
+                        <div class="bg-black/20 rounded p-4 max-h-48 overflow-y-auto custom-scrollbar border border-gray-800">
+                            <p class="text-[9px] text-gray-500 uppercase font-bold mb-3 tracking-widest">Historial de Pagos</p>
+                            <ul id="paymentHistoryList" class="space-y-3"></ul>
                         </div>
                     </div>
 
                     <div class="bg-black/40 border border-gray-800 rounded-lg p-6">
-                        <h3 class="text-xs font-bold text-gray-500 uppercase tracking-wide mb-3">Info</h3>
-                        <p class="text-xs text-gray-400 mb-1">Fecha Entrega:</p>
-                        <p class="text-white font-bold mb-3" id="dateDeadline">-</p>
-                        <p class="text-xs text-gray-400 mb-1">Responsable:</p>
-                        <p class="text-white" id="responsableName">-</p>
+                        <h3 class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 border-b border-gray-800 pb-2">Información Adicional</h3>
+                        <div class="grid grid-cols-2 gap-4">
+                            <div>
+                                <p class="text-[10px] text-gray-500 uppercase mb-1">Fecha Entrega</p>
+                                <p class="text-sm text-white font-bold" id="dateDeadline">-</p>
+                            </div>
+                            <div>
+                                <p class="text-[10px] text-gray-500 uppercase mb-1">Responsable</p>
+                                <p class="text-sm text-white" id="responsableName">-</p>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </main>
     </div>
 
-    <div id="addMaterialModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 backdrop-blur-sm p-4">
-        <div class="bg-gray-900 border border-gray-700 rounded-lg max-w-md w-full shadow-2xl">
-            <div class="p-6 border-b border-gray-800">
-                <h3 class="text-lg font-serif text-white">Descontar Material</h3>
+    <div id="addMaterialModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-50 backdrop-blur-sm p-4">
+        <div class="bg-[#121214] border border-gray-700 rounded-xl max-w-md w-full shadow-2xl relative overflow-visible flex flex-col max-h-[90vh]">
+            
+            <div class="p-5 border-b border-gray-800 bg-[#18181b] rounded-t-xl flex justify-between items-center flex-shrink-0">
+                <h3 class="text-lg font-serif text-white">Agregar Material</h3>
+                <button onclick="closeMaterialModal()" class="text-gray-500 hover:text-white"><i class="fas fa-times"></i></button>
             </div>
-            <form id="addMaterialForm" class="p-6 space-y-4">
-                <div>
-                    <label class="block text-xs text-gray-400 mb-1 uppercase">Material</label>
-                    <select id="materialSelect" required class="input-soriano appearance-none">
-                        <option value="" disabled selected>Cargando...</option>
-                    </select>
+
+            <form id="addMaterialForm" class="p-6 space-y-5 overflow-y-auto custom-scrollbar">
+                
+                <div class="relative">
+                    <label class="block text-xs text-gray-400 mb-1.5 uppercase font-bold">Buscar Material</label>
+                    
+                    <div class="relative" id="searchContainer">
+                        <i class="fas fa-search absolute left-3 top-3 text-gray-500"></i>
+                        <input type="text" id="materialSearch" 
+                            class="w-full bg-black border border-gray-600 text-white text-sm rounded-lg pl-9 pr-3 py-2.5 focus:border-soriano-gold outline-none placeholder-gray-600 transition" 
+                            placeholder="Escribe para buscar..." 
+                            autocomplete="off">
+                    </div>
+                    
+                    <div id="materialResults" class="hidden absolute top-full left-0 w-full bg-[#18181b] border border-gray-600 rounded-b-lg mt-1 shadow-2xl max-h-60 overflow-y-auto custom-scrollbar z-50">
+                        </div>
+                    
+                    <input type="hidden" id="selectedMaterialId">
+                    <div id="selectedMaterialDisplay" class="hidden mt-3 p-3 bg-gray-800/50 border border-gray-700 rounded-lg flex items-center gap-4 relative">
+                        
+                        <div class="w-16 h-16 bg-black rounded border border-gray-600 flex-shrink-0 overflow-hidden flex items-center justify-center">
+                            <img id="selectedMaterialImage" src="" class="w-full h-full object-cover hidden">
+                            <i id="selectedMaterialIcon" class="fas fa-image text-gray-600 text-xl"></i>
+                        </div>
+
+                        <div class="flex-1 min-w-0">
+                            <p class="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Seleccionado:</p>
+                            <span id="selectedMaterialName" class="font-bold text-white text-sm block truncate"></span>
+                            <span id="selectedStockDisplay" class="text-xs text-soriano-gold block mt-0.5">Stock: -</span>
+                        </div>
+
+                        <button type="button" onclick="clearMaterialSelection()" class="absolute top-2 right-2 text-gray-500 hover:text-red-400 transition">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
                 </div>
+
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs text-gray-400 mb-1 uppercase">Cantidad</label>
-                        <input type="number" id="useQty" required step="0.01" min="0.01" class="input-soriano">
+                        <label class="block text-xs text-gray-400 mb-1.5 uppercase font-bold">Cantidad a Usar</label>
+                        <input type="number" id="useQty" required step="0.01" min="0.01" class="w-full bg-black border border-gray-600 text-white text-sm rounded-lg p-2.5 focus:border-white outline-none text-center font-bold" placeholder="0">
                     </div>
                     <div>
-                        <label class="block text-xs text-gray-400 mb-1 uppercase">Unidad</label>
-                        <input type="text" id="useUnit" disabled class="input-soriano bg-gray-800 border-transparent">
+                        <label class="block text-xs text-gray-400 mb-1.5 uppercase font-bold">Unidad</label>
+                        <input type="text" id="useUnit" disabled class="w-full bg-[#18181b] border border-gray-700 text-gray-500 text-sm rounded-lg p-2.5 text-center font-mono" placeholder="-">
                     </div>
                 </div>
-                <p class="text-xs text-right text-gray-500" id="stockAvailableDisplay">Stock: -</p>
-                <div class="pt-4 flex justify-end space-x-3">
+                
+                <div class="pt-4 flex justify-end gap-3 border-t border-gray-800 mt-2">
                     <button type="button" onclick="closeMaterialModal()" class="px-4 py-2 text-gray-400 hover:text-white text-sm">Cancelar</button>
-                    <button type="submit" class="btn-primary">Descontar</button>
+                    <button type="submit" class="bg-white text-black hover:bg-gray-200 font-bold px-6 py-2 rounded-lg text-sm transition shadow-lg flex items-center gap-2">
+                        <i class="fas fa-check"></i> Confirmar
+                    </button>
                 </div>
             </form>
         </div>
@@ -193,27 +238,23 @@
                 <p class="text-xs text-gray-500">Abono a la deuda actual</p>
             </div>
             <form id="payForm" class="p-6 space-y-4">
-                
                 <div class="bg-black/40 p-3 rounded border border-gray-700 text-center">
-                    <p class="text-xs text-gray-400 uppercase">Deuda Actual</p>
-                    <p class="text-2xl font-bold text-red-500" id="modalCurrentDebt">$0</p>
+                    <p class="text-xs text-gray-400 uppercase font-bold mb-1">Deuda Actual</p>
+                    <p class="text-2xl font-bold text-red-500 font-serif" id="modalCurrentDebt">$0</p>
                 </div>
-
                 <div>
-                    <label class="block text-xs text-gray-400 mb-1 uppercase">Monto a Recibir ($)</label>
-                    <input type="text" id="payAmount" required class="input-soriano text-xl font-bold text-white text-center" oninput="formatCurrencyInput(this)">
+                    <label class="block text-xs text-gray-400 mb-1 uppercase font-bold">Monto a Recibir ($)</label>
+                    <input type="text" id="payAmount" required class="w-full bg-black border border-gray-600 text-white text-xl font-bold text-center rounded p-2 focus:border-green-500 outline-none" oninput="formatCurrencyInput(this)">
                 </div>
-
                 <div>
-                    <label class="block text-xs text-gray-400 mb-1 uppercase">Cuenta de Ingreso</label>
-                    <select id="payAccount" required class="input-soriano appearance-none border-green-900/50">
+                    <label class="block text-xs text-gray-400 mb-1 uppercase font-bold">Cuenta de Ingreso</label>
+                    <select id="payAccount" required class="w-full bg-black border border-gray-600 text-gray-300 text-sm rounded p-2 outline-none">
                         <option value="">Cargando cuentas...</option>
                     </select>
                 </div>
-
-                <div class="pt-2 flex justify-end space-x-2">
-                    <button type="button" onclick="closePayModal()" class="btn-outline text-xs">Cancelar</button>
-                    <button type="submit" class="btn-primary w-full">Confirmar Pago</button>
+                <div class="pt-4 flex justify-end gap-2">
+                    <button type="button" onclick="closePayModal()" class="px-4 py-2 text-gray-400 text-xs uppercase font-bold hover:text-white">Cancelar</button>
+                    <button type="submit" class="bg-green-600 hover:bg-green-500 text-white font-bold px-6 py-2 rounded text-xs uppercase shadow-lg shadow-green-900/20">Confirmar Pago</button>
                 </div>
             </form>
         </div>

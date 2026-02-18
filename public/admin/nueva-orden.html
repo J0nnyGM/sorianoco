@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Soriano | Nueva Orden</title>
+    <link href="../css/styles.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        
+        .measure-tab.active { 
+            background-color: #CE2029 !important; 
+            color: white !important;
+            border-color: #CE2029 !important;
+        }
+
+        /* Ajuste fino para móviles */
+        @media (max-width: 1024px) {
+            .mobile-stack { flex-direction: column; }
+            .mobile-h-auto { height: auto !important; overflow: visible !important; }
+        }
+    </style>
+</head>
+<body class="bg-soriano-dark text-gray-200 font-sans antialiased overflow-x-hidden">
+
+    <div id="app-layout" class="flex flex-col lg:flex-row h-screen w-full bg-[#0f0f10]">
+        <main class="flex-1 flex flex-col h-full relative min-w-0 transition-all duration-300">
+            
+            <div class="px-4 py-3 lg:px-6 lg:py-4 border-b border-gray-800 flex justify-between items-center bg-[#18181b] flex-shrink-0 sticky top-0 z-40 shadow-md">
+                <div class="flex items-center gap-3">
+                    <a href="ordenes.html" class="text-gray-500 hover:text-white transition p-2"><i class="fas fa-arrow-left"></i></a>
+                    <h1 class="text-lg lg:text-xl font-serif text-white flex items-center gap-2 lg:gap-3">
+                        <span class="bg-soriano-red text-white w-8 h-8 rounded flex items-center justify-center text-sm shadow-lg shadow-red-900/50 flex-shrink-0"><i class="fas fa-cut"></i></span>
+                        <span class="hidden sm:inline">Nueva Orden</span>
+                        <span class="sm:hidden">Nueva</span>
+                    </h1>
+                </div>
+                <div class="flex gap-2 lg:gap-3">
+                    <button type="button" onclick="window.location.href='ordenes.html'" class="px-3 py-1.5 lg:px-4 lg:py-2 text-gray-400 hover:text-white text-xs lg:text-sm font-medium hover:bg-gray-800 rounded transition border border-gray-700 lg:border-transparent">
+                        Cancelar
+                    </button>
+                    <button type="button" onclick="saveOrder()" class="btn-primary flex items-center gap-2 shadow-lg shadow-red-900/30 text-xs lg:text-sm px-3 lg:px-6">
+                        <i class="fas fa-save"></i> <span class="hidden sm:inline">Guardar</span>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto lg:overflow-hidden bg-[#0f0f10] custom-scrollbar">
+                <form id="orderForm" class="flex flex-col lg:grid lg:grid-cols-12 lg:h-full">
+                    
+                    <input type="hidden" id="orderId">
+                    <input type="hidden" id="status" value="recibido">
+
+                    <div class="col-span-12 lg:col-span-4 xl:col-span-3 border-b lg:border-b-0 lg:border-r border-gray-800 bg-[#141417] flex flex-col lg:overflow-y-auto custom-scrollbar p-4 lg:p-5 gap-4 lg:gap-5 order-1">
+                        
+                        <div class="bg-[#18181b] p-4 lg:p-5 rounded-xl border border-gray-800 shadow-sm">
+                            <h4 class="text-xs font-bold text-soriano-red uppercase tracking-widest mb-3 lg:mb-4 flex items-center gap-2">
+                                <i class="fas fa-user-circle"></i> Datos Cliente
+                            </h4>
+                            
+                            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-1 gap-3 lg:gap-4">
+                                <div class="col-span-1 sm:col-span-2 lg:col-span-1">
+                                    <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1">Cliente</label>
+                                    <select id="clientSelect" required class="w-full bg-[#0f0f10] border border-gray-700 text-white text-sm rounded-lg p-2.5 lg:p-3 focus:border-soriano-red focus:ring-1 focus:ring-soriano-red outline-none">
+                                        <option value="">Cargando...</option>
+                                    </select>
+                                    <div id="clientInfoBox" class="hidden mt-2 bg-gray-800/50 border border-gray-700 p-2 rounded text-gray-300 text-xs flex items-center gap-2">
+                                        <i class="fas fa-phone-alt text-soriano-gold"></i> <span id="infoPhone">...</span>
+                                    </div>
+                                </div>
+
+                                <div>
+                                    <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1">Entrega</label>
+                                    <input type="date" id="deadline" required class="w-full bg-[#0f0f10] border border-gray-700 text-white text-sm rounded-lg p-2.5 lg:p-3 focus:border-soriano-red outline-none" style="color-scheme: dark;">
+                                </div>
+
+                                <div>
+                                    <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1">Responsable</label>
+                                    <div class="relative">
+                                        <select id="responsableSelect" class="w-full bg-[#0f0f10] border border-gray-700 text-gray-300 text-sm rounded-lg p-2.5 lg:p-3 appearance-none focus:border-soriano-red outline-none">
+                                            <option value="">Cargando...</option>
+                                        </select>
+                                        <i class="fas fa-user-tag absolute right-3 top-3.5 text-gray-500 text-xs pointer-events-none"></i>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-[#18181b] p-4 lg:p-5 rounded-xl border border-gray-800 shadow-sm flex-1 flex flex-col">
+                            <div class="flex flex-wrap justify-between items-center mb-3 border-b border-gray-800 pb-2 gap-2">
+                                <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Medidas</h4>
+                                <div class="flex bg-black rounded p-0.5 gap-0.5 overflow-x-auto max-w-full" id="measureTabs">
+                                    <button type="button" data-tab="chaqueta" onclick="showMeasureTab('chaqueta')" class="measure-tab px-2 py-1 text-[10px] uppercase font-bold rounded transition text-gray-400 hover:text-white flex-shrink-0">Chaq</button>
+                                    <button type="button" data-tab="pantalon" onclick="showMeasureTab('pantalon')" class="measure-tab px-2 py-1 text-[10px] uppercase font-bold rounded transition text-gray-400 hover:text-white flex-shrink-0">Pan</button>
+                                    <button type="button" data-tab="camisa" onclick="showMeasureTab('camisa')" class="measure-tab px-2 py-1 text-[10px] uppercase font-bold rounded transition text-gray-400 hover:text-white flex-shrink-0">Cam</button>
+                                    <button type="button" data-tab="chaleco" onclick="showMeasureTab('chaleco')" class="measure-tab px-2 py-1 text-[10px] uppercase font-bold rounded transition text-gray-400 hover:text-white flex-shrink-0">Chal</button>
+                                </div>
+                            </div>
+
+                            <div id="measuresContainer" class="grid grid-cols-2 lg:grid-cols-2 xl:grid-cols-2 gap-3 content-start lg:overflow-y-auto custom-scrollbar flex-1 min-h-[100px]">
+                                <p class="text-xs text-gray-500 col-span-full text-center py-8 italic border border-dashed border-gray-800 rounded">
+                                    Seleccione cliente
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="col-span-12 lg:col-span-8 xl:col-span-9 flex flex-col lg:h-full bg-[#0f0f10] p-4 lg:p-6 relative order-2 gap-4 lg:gap-5">
+
+                        <div class="bg-[#18181b] p-4 lg:p-5 rounded-xl border border-gray-700 shadow-lg z-20">
+                            <div class="flex flex-col md:flex-row gap-4 lg:gap-5">
+                                
+                                <div id="productImagePreview" class="hidden flex-shrink-0 flex-col items-center border-r border-gray-700 pr-5 md:w-28 transition-all">
+                                    <div class="h-16 w-16 lg:h-20 lg:w-20 bg-black rounded border border-gray-600 flex items-center justify-center overflow-hidden relative">
+                                        <img id="imgPreviewSrc" src="" class="absolute inset-0 w-full h-full object-cover">
+                                    </div>
+                                    <span class="text-[9px] text-gray-500 mt-1 uppercase font-bold tracking-widest hidden lg:block">Preview</span>
+                                </div>
+
+                                <div class="flex-1">
+                                    <div class="grid grid-cols-12 gap-3 lg:gap-4 items-end">
+                                        
+                                        <div class="col-span-12 md:col-span-6 relative z-30">
+                                            <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1">Buscar Producto</label>
+                                            <div class="relative">
+                                                <i class="fas fa-search absolute left-3 top-3 text-gray-400"></i>
+                                                <input type="text" id="inventorySearch" class="w-full pl-9 pr-3 py-2.5 bg-[#0f0f10] border border-gray-600 rounded text-white text-sm focus:border-white transition placeholder-gray-600 outline-none" placeholder="Escribe para buscar..." autocomplete="off">
+                                            </div>
+                                            <input type="hidden" id="selectedInventoryId">
+                                            <div id="inventoryList" class="hidden absolute top-full left-0 w-full bg-[#202024] border border-gray-600 rounded-lg mt-1 shadow-2xl max-h-60 overflow-y-auto custom-scrollbar"></div>
+                                        </div>
+
+                                        <div class="col-span-6 md:col-span-3">
+                                            <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1 text-right">Precio</label>
+                                            <input type="text" id="addItemPrice" class="w-full px-3 py-2.5 bg-[#0f0f10] border border-gray-600 rounded text-green-400 font-mono font-bold text-sm text-right focus:border-green-500 outline-none" placeholder="$0" oninput="formatCurrencyInput(this)">
+                                        </div>
+
+                                        <div class="col-span-6 md:col-span-3">
+                                            <label class="block text-[10px] text-transparent mb-1 hidden md:block">.</label>
+                                            <button type="button" onclick="addItemToOrder()" class="w-full bg-white hover:bg-gray-200 text-black font-bold py-2.5 rounded shadow transition uppercase text-xs flex items-center justify-center gap-2 h-[42px]">
+                                                <i class="fas fa-plus"></i> <span class="lg:inline">Agregar</span>
+                                            </button>
+                                        </div>
+
+                                        <div class="col-span-12 md:col-span-5">
+                                            <input type="text" id="addItemDesc" class="w-full px-3 py-2 bg-transparent border-b border-gray-700 text-gray-300 text-sm focus:border-soriano-gold outline-none placeholder-gray-600" placeholder="Descripción detallada...">
+                                        </div>
+                                        
+                                        <div class="col-span-8 md:col-span-4">
+                                            <input type="text" id="addItemNotes" class="w-full px-3 py-2 bg-transparent border-b border-gray-700 text-soriano-gold text-xs italic focus:border-soriano-gold outline-none placeholder-gray-600" placeholder="Nota interna (Opcional)...">
+                                        </div>
+                                        
+                                        <div class="col-span-4 md:col-span-3 flex items-center justify-end gap-2">
+                                            <div class="flex items-center bg-[#0f0f10] rounded border border-gray-700 h-8">
+                                                <button type="button" onclick="document.getElementById('addItemQty').stepDown()" class="px-2 text-gray-400 hover:text-white">-</button>
+                                                <input type="number" id="addItemQty" class="w-8 lg:w-10 bg-transparent text-center text-white text-sm font-bold h-full focus:outline-none appearance-none" value="1" min="1">
+                                                <button type="button" onclick="document.getElementById('addItemQty').stepUp()" class="px-2 text-gray-400 hover:text-white">+</button>
+                                            </div>
+                                        </div>
+
+                                        <div class="col-span-12">
+                                            <div id="sizeSelectorContainer" class="flex flex-wrap gap-1.5 justify-end"></div>
+                                            <input type="hidden" id="selectedSize">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex-1 bg-[#18181b] rounded-xl border border-gray-800 overflow-hidden flex flex-col shadow-lg min-h-[250px] lg:min-h-0">
+                            <div class="overflow-x-auto flex-1 custom-scrollbar">
+                                <table class="w-full text-left text-sm min-w-[500px] lg:min-w-0"> <thead class="bg-black/50 text-gray-500 uppercase text-[10px] tracking-wider font-bold border-b border-gray-800 sticky top-0 backdrop-blur-sm z-10">
+                                        <tr>
+                                            <th class="px-3 lg:px-4 py-3 text-center w-12 lg:w-16">Cant</th>
+                                            <th class="px-3 lg:px-4 py-3">Descripción</th>
+                                            <th class="px-3 lg:px-4 py-3 w-20 lg:w-24 text-center">Talla</th>
+                                            <th class="px-3 lg:px-4 py-3 text-right">Precio</th>
+                                            <th class="px-3 lg:px-4 py-3 text-right">Total</th>
+                                            <th class="px-3 lg:px-4 py-3 w-10"></th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="orderItemsBody" class="divide-y divide-gray-800 text-gray-300"></tbody>
+                                </table>
+                            </div>
+                            
+                            <div class="bg-[#141417] p-3 lg:p-4 border-t border-gray-800 flex justify-between items-center">
+                                <div class="text-[10px] lg:text-xs text-gray-500 italic flex items-center gap-2">
+                                    <i class="fas fa-shopping-bag"></i> <span id="itemsCount">0 items</span>
+                                </div>
+                                <div class="flex items-center gap-3 lg:gap-4">
+                                    <span class="text-xs lg:text-sm text-gray-400 uppercase font-bold tracking-widest">Total</span>
+                                    <span class="text-2xl lg:text-3xl font-serif text-soriano-gold" id="orderTotalDisplay">$0</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="flex flex-col md:grid md:grid-cols-12 gap-4 lg:gap-5 h-auto lg:h-32 flex-shrink-0 pb-6 lg:pb-0">
+                            <div class="col-span-12 md:col-span-7 bg-[#18181b] p-3 rounded-xl border border-gray-800 h-24 lg:h-full">
+                                <label class="block text-[10px] text-gray-500 mb-1 uppercase font-bold">Observaciones Generales</label>
+                                <textarea id="orderNotes" class="w-full h-[calc(100%-1.5rem)] bg-transparent text-gray-300 text-sm resize-none focus:outline-none" placeholder="Instrucciones especiales para esta orden..."></textarea>
+                            </div>
+                            
+                            <div class="col-span-12 md:col-span-5 bg-gradient-to-br from-gray-900 to-[#18181b] p-4 rounded-xl border border-gray-700 flex flex-col justify-center h-28 lg:h-full">
+                                <div class="flex justify-between items-center mb-2">
+                                    <label id="paymentLabel" class="text-xs text-green-500 uppercase font-bold flex items-center gap-1">
+                                        <i class="fas fa-cash-register"></i> Total a Pagar
+                                    </label>
+                                    
+                                    <select id="targetAccount" class="bg-[#0f0f10] border border-gray-600 text-gray-400 text-[10px] rounded px-2 py-1 outline-none h-6 w-32">
+                                        <option value="">Cuenta Destino...</option>
+                                    </select>
+                                </div>
+                                <input type="text" id="advancePayment" class="w-full bg-transparent border-b border-gray-600 text-white text-2xl lg:text-3xl font-bold p-1 focus:border-green-500 outline-none text-right placeholder-gray-700" placeholder="$0" oninput="formatCurrencyInput(this)">
+                            </div>
+                        </div>
+
+                    </div>
+                </form>
+            </div>
+        </main>
+    </div>
+
+    <script type="module">
+        import { initAdminLayout } from '../js/global-components.js';
+        initAdminLayout('ordenes'); 
+        import './nueva-orden.js'; 
+    </script>
+</body>
+</html>

@@ -9,7 +9,8 @@ service cloud.firestore {
     }
     
     function isAdmin() {
-      return getUserData().role == 'admin';
+      // Aseguramos que data no sea null antes de acceder a role
+      return getUserData() != null && getUserData().role == 'admin';
     }
     
     function isContabilidad() {
@@ -28,7 +29,7 @@ service cloud.firestore {
 
     // 1. USUARIOS
     match /users/{userId} {
-      allow create: if request.auth != null && request.auth.uid == userId;
+      allow create: if request.auth != null; // Permitir registro inicial
       allow read: if request.auth != null; 
       allow update, delete: if isAdmin();
     }
@@ -36,7 +37,9 @@ service cloud.firestore {
     // 2. INVENTARIO & PROVEEDORES
     match /inventory/{itemId} {
       allow read: if isActive();
-      allow write: if isContabilidad() || isVendedor(); // Vendedor necesita descontar stock (update)
+      // Permitimos update a vendedores para descontar stock
+      allow create, update: if isContabilidad() || isVendedor(); 
+      allow delete: if isAdmin();
     }
     match /suppliers/{supId} {
       allow read: if isActive();
@@ -54,13 +57,13 @@ service cloud.firestore {
     // 4. CLIENTES
     match /clients/{clientId} {
       allow read: if isActive();
-      allow write: if isVendedor();
+      allow write: if isVendedor(); // Admin tambien es vendedor segun la funcion
     }
 
     // 5. ÓRDENES DE PRODUCCIÓN
     match /orders/{orderId} {
       allow read: if isActive();
-      allow create: if isVendedor();
+      allow create: if isVendedor(); // Aquí fallaba si no eras admin/vendedor
       allow update: if isActive(); 
       allow delete: if isAdmin();
     }
@@ -71,24 +74,30 @@ service cloud.firestore {
       allow write: if isContabilidad();
     }
 
-    // 7. TESORERÍA (CUENTAS) - ¡NUEVO!
-    // Necesario para cargar el select en Órdenes y actualizar saldo al pagar
+    // 7. TESORERÍA (CUENTAS)
     match /accounts/{accountId} {
-      allow read: if isActive(); // Para que el vendedor vea las cuentas en el select
-      allow write: if isContabilidad() || isVendedor(); // Vendedor necesita actualizar saldo (update) al recibir anticipo
+      allow read: if isActive(); 
+      allow write: if isContabilidad() || isVendedor(); 
     }
 
-    // 8. LOG DE TRANSACCIONES (TESORERÍA)
-    // Se crea automáticamente al mover dinero
+    // 8. LOG DE TRANSACCIONES
     match /transactions/{txId} {
-      allow read: if isActive(); // Para ver el extracto
-      allow create: if isActive(); // Para registrar movimientos (vendedores u admin)
+      allow read: if isActive();
+      allow create: if isActive();
     }
     
-    // 9. AUDITORÍA DE GASTOS BORRADOS (NUEVO)
+    // 9. AUDITORÍA
     match /audit_deleted_expenses/{logId} {
-      allow read: if isContabilidad(); // Solo contadores ven el log de borrados
-      allow create: if isActive(); // Cualquiera activo puede borrar (y crear el log)
+      allow read: if isContabilidad();
+      allow create: if isActive();
+    }
+
+    // 10. CONTADORES (¡ESTO FALTABA!)
+    // Necesario para generar el ID consecutivo (Order #1, #2...)
+    match /counters/{counterId} {
+      allow read: if isActive();
+      allow update: if isActive(); // Cualquier usuario activo puede incrementar el contador
+      allow create: if isAdmin();  // Solo el admin crea el contador inicial (si no existe)
     }
 
   }

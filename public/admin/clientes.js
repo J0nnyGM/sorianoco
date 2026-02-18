@@ -6,6 +6,7 @@ import { updateSidebarUser } from '../js/global-components.js';
 const tableBody = document.getElementById('clientsTableBody');
 const searchInput = document.getElementById('searchInput');
 const filterStatus = document.getElementById('filterStatus');
+const clientCount = document.getElementById('clientCount');
 const modal = document.getElementById('clientModal');
 const form = document.getElementById('clientForm');
 const modalTitle = document.getElementById('modalTitle');
@@ -19,7 +20,34 @@ const emailInput = document.getElementById('clientEmail');
 const addressInput = document.getElementById('clientAddress');
 
 let clientsCache = [];
-let unsubscribe = null; // Para detener el listener anterior al cambiar filtro
+let unsubscribe = null; 
+
+// --- UTILS: AVATAR & COLOR ---
+const getInitials = (name) => {
+    return name
+        .split(' ')
+        .map(n => n[0])
+        .join('')
+        .substring(0, 2)
+        .toUpperCase();
+};
+
+const getAvatarColor = (name) => {
+    const colors = [
+        'bg-red-900 text-red-200 border-red-700',
+        'bg-blue-900 text-blue-200 border-blue-700',
+        'bg-green-900 text-green-200 border-green-700',
+        'bg-yellow-900 text-yellow-200 border-yellow-700',
+        'bg-purple-900 text-purple-200 border-purple-700',
+        'bg-pink-900 text-pink-200 border-pink-700',
+        'bg-indigo-900 text-indigo-200 border-indigo-700'
+    ];
+    let hash = 0;
+    for (let i = 0; i < name.length; i++) {
+        hash = name.charCodeAt(i) + ((hash << 5) - hash);
+    }
+    return colors[Math.abs(hash) % colors.length];
+};
 
 // 1. INIT
 onAuthStateChanged(auth, async (user) => {
@@ -29,32 +57,24 @@ onAuthStateChanged(auth, async (user) => {
         .then(({ getDoc }) => getDoc(doc(db, "users", user.uid)))
         .then(snap => { if(snap.exists()) updateSidebarUser(user, snap.data()) });
 
-    subscribeClients('active'); // Cargar activos por defecto
+    subscribeClients('active');
 });
 
-// 2. LISTENER INTELIGENTE (FILTRO)
+// 2. LISTENER
 filterStatus.addEventListener('change', (e) => {
     subscribeClients(e.target.value);
 });
 
 function subscribeClients(status) {
-    if (unsubscribe) unsubscribe(); // Detener listener previo
+    if (unsubscribe) unsubscribe();
 
-    // Nota: status puede ser 'active' o 'archived'
-    // Si tus clientes viejos no tienen el campo 'status', Firebase los tratará como si no existieran en este query.
-    // Para arreglar eso, asumiremos que si no tiene status, es active (o corre un script para actualizar DB).
-    // Por ahora, usaremos filtro en cliente para compatibilidad o query simple.
-    
-    // ESTRATEGIA COMPATIBLE: Traer todo y filtrar en memoria si son pocos (<2000), 
-    // o query estricto. Usaremos query estricto asumiendo que al crear guardamos status='active'.
-    
     const q = query(
         collection(db, "clients"), 
         where("status", "==", status),
         orderBy("name")
     );
 
-    tableBody.innerHTML = `<tr><td colspan="3" class="px-6 py-8 text-center text-gray-500"><i class="fas fa-circle-notch fa-spin"></i> Cargando...</td></tr>`;
+    tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-12 text-center text-gray-500"><i class="fas fa-circle-notch fa-spin mr-2"></i> Cargando datos...</td></tr>`;
 
     unsubscribe = onSnapshot(q, (snapshot) => {
         clientsCache = [];
@@ -63,52 +83,86 @@ function subscribeClients(status) {
     });
 }
 
-// 3. RENDERIZADO
+// 3. RENDERIZADO (MEJORADO)
 function renderTable(list) {
     const isArchivedView = filterStatus.value === 'archived';
+    clientCount.textContent = `${list.length} registros encontrados`;
 
     if (list.length === 0) {
-        tableBody.innerHTML = `<tr><td colspan="3" class="px-6 py-8 text-center text-gray-500">No hay clientes en esta vista.</td></tr>`;
+        tableBody.innerHTML = `<tr><td colspan="4" class="px-6 py-12 text-center text-gray-500 italic">No se encontraron clientes en esta vista.</td></tr>`;
         return;
     }
 
-    tableBody.innerHTML = list.map(c => `
-        <tr class="hover:bg-gray-800/50 transition-colors border-b border-gray-800/50">
+    tableBody.innerHTML = list.map(c => {
+        const initials = getInitials(c.name);
+        const colorClass = getAvatarColor(c.name);
+
+        return `
+        <tr class="hover:bg-white/5 transition border-b border-gray-800/50 group">
+            
             <td class="px-6 py-4">
-                <div class="font-bold text-white text-lg">${c.name}</div>
-                <div class="text-xs text-gray-500">${c.idNum || 'Sin ID'}</div>
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-xs border ${colorClass} shadow-sm">
+                        ${initials}
+                    </div>
+                    <div>
+                        <div class="font-bold text-white text-sm group-hover:text-soriano-gold transition">${c.name}</div>
+                        <div class="text-[10px] text-gray-500 font-mono mt-0.5 bg-gray-900 inline-block px-1.5 rounded border border-gray-800">
+                            ${c.idNum || 'SIN ID'}
+                        </div>
+                    </div>
+                </div>
             </td>
-            <td class="px-6 py-4 text-sm text-gray-300">
-                <div class="flex items-center gap-2"><i class="fas fa-phone text-gray-600"></i> ${c.phone || '-'}</div>
-                <div class="text-xs text-gray-500">${c.email || ''}</div>
+
+            <td class="px-6 py-4">
+                <div class="flex flex-col gap-1">
+                    ${c.phone ? `<div class="text-sm text-gray-300 flex items-center gap-2"><i class="fas fa-phone text-gray-600 text-xs"></i> ${c.phone}</div>` : '<span class="text-gray-600 text-xs italic">Sin teléfono</span>'}
+                    ${c.email ? `<div class="text-xs text-gray-500 flex items-center gap-2 truncate max-w-[150px]"><i class="fas fa-envelope text-gray-600 text-xs"></i> ${c.email}</div>` : ''}
+                </div>
             </td>
-            <td class="px-6 py-4 text-right flex justify-end gap-2">
-                
-                <a href="cliente-detalle.html?id=${c.id}" 
-                   class="w-8 h-8 flex items-center justify-center rounded bg-gray-800 text-blue-400 hover:text-white hover:bg-blue-600 transition" 
-                   title="Ver Ficha y Medidas">
-                    <i class="fas fa-eye"></i>
-                </a>
 
-                <button onclick="window.editClient('${c.id}')" 
-                   class="w-8 h-8 flex items-center justify-center rounded bg-gray-800 text-soriano-gold hover:text-white hover:bg-soriano-gold transition" 
-                   title="Editar Datos Básicos">
-                    <i class="fas fa-pencil-alt"></i>
-                </button>
+            <td class="px-6 py-4 hidden md:table-cell">
+                <span class="text-xs text-gray-400 truncate max-w-[200px] block" title="${c.address || ''}">
+                    ${c.address || '<span class="italic opacity-50">No registrada</span>'}
+                </span>
+            </td>
 
-                ${isArchivedView 
-                    ? `<button onclick="window.toggleArchive('${c.id}', 'active')" class="w-8 h-8 rounded bg-gray-800 text-green-500 hover:bg-green-600 hover:text-white transition" title="Restaurar"><i class="fas fa-trash-restore"></i></button>`
-                    : `<button onclick="window.toggleArchive('${c.id}', 'archived')" class="w-8 h-8 rounded bg-gray-800 text-gray-500 hover:bg-red-600 hover:text-white transition" title="Archivar"><i class="fas fa-archive"></i></button>`
-                }
+            <td class="px-6 py-4 text-right">
+                <div class="flex items-center justify-end gap-2">
+                    
+                    <a href="cliente-detalle.html?id=${c.id}" 
+                       class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-800 border border-gray-700 text-blue-400 hover:text-white hover:bg-blue-600 hover:border-blue-500 transition shadow-sm" 
+                       title="Ver Ficha y Medidas">
+                        <i class="fas fa-ruler-combined"></i>
+                    </a>
+
+                    <button onclick="window.editClient('${c.id}')" 
+                       class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-800 border border-gray-700 text-gray-400 hover:text-white hover:bg-gray-700 hover:border-gray-500 transition shadow-sm" 
+                       title="Editar Datos">
+                        <i class="fas fa-pencil-alt"></i>
+                    </button>
+
+                    ${isArchivedView 
+                        ? `<button onclick="window.toggleArchive('${c.id}', 'active')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-800 border border-gray-700 text-green-500 hover:bg-green-600 hover:text-white transition" title="Restaurar"><i class="fas fa-trash-restore"></i></button>`
+                        : `<button onclick="window.toggleArchive('${c.id}', 'archived')" class="w-8 h-8 flex items-center justify-center rounded-lg bg-gray-800 border border-gray-700 text-gray-500 hover:bg-red-900/50 hover:text-red-400 hover:border-red-900 transition" title="Archivar"><i class="fas fa-archive"></i></button>`
+                    }
+                </div>
             </td>
         </tr>
-    `).join('');
+    `;
+    }).join('');
 }
 
-// 4. GUARDAR (CREAR O EDITAR)
+// 4. GUARDAR
 form.addEventListener('submit', async (e) => {
     e.preventDefault();
     
+    // UI Feedback
+    const submitBtn = form.querySelector('button[type="button"].btn-primary') || document.querySelector('#clientModal .btn-primary');
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Guardando...';
+    submitBtn.disabled = true;
+
     const id = clientIdInput.value;
     const data = {
         name: nameInput.value,
@@ -121,16 +175,14 @@ form.addEventListener('submit', async (e) => {
 
     try {
         if (id) {
-            // EDITAR
             await updateDoc(doc(db, "clients", id), data);
-            alert("Cliente actualizado.");
+            // alert("Cliente actualizado."); // Opcional, mejor cerrar directo si es obvio
         } else {
-            // CREAR
-            data.status = 'active'; // Por defecto activo
+            data.status = 'active';
             data.createdAt = serverTimestamp();
             const ref = await addDoc(collection(db, "clients"), data);
             
-            if(confirm("Cliente creado. ¿Ir a ficha de medidas?")) {
+            if(confirm("Cliente creado exitosamente.\n¿Desea ir a la ficha para registrar medidas ahora?")) {
                 window.location.href = `cliente-detalle.html?id=${ref.id}`;
                 return;
             }
@@ -138,7 +190,10 @@ form.addEventListener('submit', async (e) => {
         closeModal();
     } catch (error) {
         console.error(error);
-        alert("Error al guardar.");
+        alert("Error al guardar: " + error.message);
+    } finally {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
     }
 });
 
@@ -148,6 +203,7 @@ window.openModal = () => {
     clientIdInput.value = "";
     modalTitle.textContent = "Nuevo Cliente";
     modal.classList.remove('hidden'); modal.classList.add('flex');
+    setTimeout(() => nameInput.focus(), 100);
 };
 
 window.editClient = (id) => {
@@ -161,7 +217,7 @@ window.editClient = (id) => {
     emailInput.value = client.email || "";
     addressInput.value = client.address || "";
 
-    modalTitle.textContent = "Editar Datos";
+    modalTitle.textContent = "Editar Cliente";
     modal.classList.remove('hidden'); modal.classList.add('flex');
 };
 
@@ -170,7 +226,6 @@ window.toggleArchive = async (id, newStatus) => {
     if(confirm(`¿Desea ${action} este cliente?`)) {
         try {
             await updateDoc(doc(db, "clients", id), { status: newStatus });
-            // La tabla se actualiza sola por el snapshot
         } catch (e) {
             console.error(e);
             alert("Error al actualizar estado.");
@@ -180,7 +235,7 @@ window.toggleArchive = async (id, newStatus) => {
 
 window.closeModal = () => { modal.classList.add('hidden'); modal.classList.remove('flex'); };
 
-// BUSCADOR (Filtrado Local sobre la lista actual)
+// BUSCADOR INSTANTÁNEO
 searchInput.addEventListener('input', (e) => {
     const term = e.target.value.toLowerCase();
     const filtered = clientsCache.filter(c => 

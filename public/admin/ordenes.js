@@ -236,10 +236,10 @@ function renderOrdersGrid(docs) {
     ordersGrid.innerHTML = docs.map(doc => {
         const data = doc.data();
         
-        // Estilo especial para anuladas
+        // --- Estilo especial para anuladas ---
         if (data.status === 'anulada') {
             return `
-                <tr class="bg-red-900/5 hover:bg-red-900/10 transition">
+                <tr class="bg-red-900/5 hover:bg-red-900/10 transition border-b border-gray-800">
                     <td class="px-6 py-4">
                         <div class="flex items-center gap-3">
                             <span class="font-mono text-red-500 font-bold text-sm">#${data.orderNumber}</span>
@@ -257,7 +257,7 @@ function renderOrdersGrid(docs) {
             `;
         }
 
-        // Lógica de items y resumen (Igual que antes)
+        // --- Lógica Normal ---
         const items = data.items || [];
         const totalQty = items.reduce((sum, item) => sum + (parseInt(item.quantity) || 0), 0);
         let summary = 'Sin items';
@@ -270,15 +270,27 @@ function renderOrdersGrid(docs) {
             phoneDisplay = `<div class="text-[10px] text-gray-500 mt-0.5"><i class="fas fa-phone mr-1"></i> ${cachedClient.phone}</div>`;
         }
 
+        // --- CÁLCULOS FINANCIEROS (CAMBIO AQUÍ) ---
+        const totalAmount = data.totalAmount || 0;
         const balance = data.balanceDue || 0;
         const isPaid = balance <= 0;
-        const balanceHtml = !isPaid 
-            ? `<span class="text-red-400 font-bold text-xs whitespace-nowrap">${copFormatter.format(balance)}</span>` 
-            : `<span class="text-green-500 font-bold text-[10px] border border-green-500/30 bg-green-900/10 px-2 py-0.5 rounded">PAGADO</span>`;
+
+        // Construcción visual del saldo/total
+        const moneyHtml = `
+            <div class="flex flex-col items-end gap-0.5">
+                ${!isPaid 
+                    ? `<span class="text-red-400 font-bold text-sm bg-red-900/10 px-1.5 rounded">${copFormatter.format(balance)}</span>` 
+                    : `<span class="text-green-500 font-bold text-[10px] border border-green-500/30 bg-green-900/10 px-2 py-0.5 rounded">PAGADO</span>`
+                }
+                <span class="text-[10px] text-gray-500 font-mono">
+                    Total: <span class="text-gray-400">${copFormatter.format(totalAmount)}</span>
+                </span>
+            </div>
+        `;
 
         const nextStatus = nextStatusMap[data.status];
         
-        // Botones (Simplificados para tabla)
+        // --- Botones de Acción ---
         let actionButtons = '';
         
         // Botón Avanzar
@@ -294,7 +306,7 @@ function renderOrdersGrid(docs) {
             actionButtons += `<div class="w-8 h-8 flex items-center justify-center text-green-500" title="Finalizado"><i class="fas fa-check-circle"></i></div>`;
         }
 
-        // Botón Pagar
+        // Botón Pagar (Solo si debe)
         if (!isPaid) {
             actionButtons += `
                 <button onclick="window.openPayModal('${doc.id}', ${balance}, '${data.orderNumber}')" 
@@ -305,37 +317,16 @@ function renderOrdersGrid(docs) {
             `;
         }
 
-        // Botón Ver Detalle
+        // Ver y Anular
         actionButtons += `
-            <a href="orden-detalle.html?id=${doc.id}" 
-                class="w-8 h-8 rounded-full hover:bg-blue-500 hover:text-white text-blue-400 transition flex items-center justify-center" 
-                title="Ver Detalle">
-                <i class="fas fa-eye"></i>
-            </a>
+            <a href="orden-detalle.html?id=${doc.id}" class="w-8 h-8 rounded-full hover:bg-blue-500 hover:text-white text-blue-400 transition flex items-center justify-center" title="Ver Detalle"><i class="fas fa-eye"></i></a>
+            <a href="remision.html?id=${doc.id}" target="_blank" class="w-8 h-8 rounded-full hover:bg-white hover:text-black text-gray-500 transition flex items-center justify-center" title="Imprimir"><i class="fas fa-print"></i></a>
+            <button onclick="window.cancelOrder('${doc.id}', '${data.orderNumber}', ${data.totalAmount - balance})" class="w-8 h-8 rounded-full hover:bg-red-500 hover:text-white text-gray-600 transition flex items-center justify-center" title="Anular"><i class="fas fa-ban"></i></button>
         `;
 
-        // Botón Imprimir
-        actionButtons += `
-            <a href="remision.html?id=${doc.id}" target="_blank" 
-                class="w-8 h-8 rounded-full hover:bg-white hover:text-black text-gray-500 transition flex items-center justify-center" 
-                title="Imprimir">
-                <i class="fas fa-print"></i>
-            </a>
-        `;
-
-        // Botón Anular (Dropdown o directo, aquí directo por espacio)
-        actionButtons += `
-            <button onclick="window.cancelOrder('${doc.id}', '${data.orderNumber}', ${data.totalAmount - balance})" 
-                class="w-8 h-8 rounded-full hover:bg-red-500 hover:text-white text-gray-600 transition flex items-center justify-center" 
-                title="Anular Orden">
-                <i class="fas fa-ban"></i>
-            </button>
-        `;
-
-        // Renderizar la FILA (TR)
+        // Renderizar la FILA
         return `
             <tr class="hover:bg-white/5 transition group border-b border-gray-800 last:border-0">
-                
                 <td class="px-6 py-4 whitespace-nowrap">
                     <div class="flex flex-col gap-1">
                         <span class="font-mono text-soriano-gold font-bold text-sm">#${data.orderNumber}</span>
@@ -345,29 +336,23 @@ function renderOrdersGrid(docs) {
                         </span>
                     </div>
                 </td>
-
                 <td class="px-6 py-4">
                     <div class="font-bold text-white text-sm truncate max-w-[150px]">${data.clientName}</div>
                     ${phoneDisplay}
                 </td>
-
                 <td class="px-6 py-4 hidden md:table-cell">
                     <div class="flex items-center">
                         <span class="bg-gray-800 text-white text-xs font-bold px-2 py-0.5 rounded mr-2">${totalQty}</span>
                         <span class="text-gray-400 text-xs truncate max-w-[200px]">${summary}</span>
                     </div>
                 </td>
-
                 <td class="px-6 py-4 text-center hidden md:table-cell">
                     <div class="font-mono text-xs text-gray-300 bg-gray-900 inline-block px-2 py-1 rounded border border-gray-800">
                         ${data.deadline}
                     </div>
                 </td>
-
                 <td class="px-6 py-4 text-right">
-                    ${balanceHtml}
-                </td>
-
+                    ${moneyHtml} </td>
                 <td class="px-6 py-4 text-right">
                     <div class="flex items-center justify-end gap-1">
                         ${actionButtons}

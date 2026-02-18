@@ -11,85 +11,128 @@
 <body class="bg-soriano-dark text-gray-300 font-sans antialiased">
 
     <div id="app-layout" class="flex h-screen overflow-hidden">
-        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-soriano-dark p-6 md:p-12 w-full">
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-soriano-dark p-6 md:p-12 w-full flex flex-col">
             
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-6 flex-shrink-0">
                 <div>
-                    <h1 class="text-3xl font-serif text-white mb-1">Cartera de Clientes</h1>
-                    <p class="text-gray-500 text-sm">Gestión de base de datos.</p>
+                    <h1 class="text-3xl font-serif text-white mb-1 flex items-center gap-3">
+                        <span class="bg-soriano-gold text-black w-8 h-8 rounded flex items-center justify-center text-sm"><i class="fas fa-users"></i></span>
+                        Clientes
+                    </h1>
+                    <p class="text-gray-500 text-sm ml-11">Base de datos y gestión de medidas.</p>
                 </div>
                 
-                <div class="flex flex-wrap gap-2 items-center">
-                    <select id="filterStatus" class="bg-black border border-gray-700 text-white text-sm rounded px-3 py-2 focus:border-soriano-gold outline-none">
-                        <option value="active">Ver Activos</option>
-                        <option value="archived">Ver Archivados</option>
-                    </select>
+                <div class="flex flex-col sm:flex-row gap-3 w-full md:w-auto">
+                    <div class="relative">
+                        <select id="filterStatus" class="appearance-none bg-black border border-gray-700 text-white text-sm rounded-full pl-4 pr-8 py-2.5 focus:border-soriano-gold outline-none cursor-pointer hover:bg-gray-900 transition">
+                            <option value="active">Activos</option>
+                            <option value="archived">Archivados</option>
+                        </select>
+                        <i class="fas fa-chevron-down absolute right-3 top-3.5 text-gray-500 text-xs pointer-events-none"></i>
+                    </div>
 
-                    <input type="text" id="searchInput" placeholder="Buscar..." class="input-soriano py-2 px-4 text-sm w-40 md:w-56">
+                    <div class="relative flex-1 sm:w-64">
+                        <i class="fas fa-search absolute left-4 top-3 text-gray-500"></i>
+                        <input type="text" id="searchInput" placeholder="Buscar por nombre o ID..." class="w-full bg-black border border-gray-700 rounded-full py-2.5 pl-10 pr-4 text-sm text-white focus:border-white outline-none transition placeholder-gray-600">
+                    </div>
                     
-                    <button onclick="openModal()" class="btn-primary flex items-center shadow-lg shadow-red-900/20 whitespace-nowrap px-4 py-2 text-sm">
-                        <i class="fas fa-plus mr-2"></i> Nuevo
+                    <button onclick="openModal()" class="btn-primary flex items-center justify-center shadow-lg shadow-red-900/20 px-6 py-2.5 text-sm rounded-full">
+                        <i class="fas fa-plus mr-2"></i> Nuevo Cliente
                     </button>
                 </div>
             </div>
 
-            <div class="bg-black/40 border border-gray-800 rounded-lg overflow-hidden shadow-xl">
-                <div class="overflow-x-auto">
+            <div class="bg-[#121214] border border-gray-800 rounded-xl overflow-hidden shadow-xl flex-1 flex flex-col min-h-0">
+                <div class="overflow-x-auto flex-1 custom-scrollbar">
                     <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="border-b border-gray-800 text-xs uppercase text-gray-500 bg-gray-900/50">
-                                <th class="px-6 py-4 font-medium tracking-wider">Cliente</th>
-                                <th class="px-6 py-4 font-medium tracking-wider">Contacto</th>
-                                <th class="px-6 py-4 font-medium tracking-wider text-right">Acciones</th>
+                        <thead class="bg-[#18181b] text-xs uppercase text-gray-500 sticky top-0 z-10 shadow-sm">
+                            <tr>
+                                <th class="px-6 py-4 font-bold tracking-wider border-b border-gray-800">Cliente / ID</th>
+                                <th class="px-6 py-4 font-bold tracking-wider border-b border-gray-800">Contacto</th>
+                                <th class="px-6 py-4 font-bold tracking-wider border-b border-gray-800 hidden md:table-cell">Ubicación</th>
+                                <th class="px-6 py-4 font-bold tracking-wider border-b border-gray-800 text-right">Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="clientsTableBody" class="divide-y divide-gray-800 text-sm">
-                            <tr><td colspan="3" class="px-6 py-8 text-center text-gray-500"><i class="fas fa-circle-notch fa-spin mr-2"></i> Cargando...</td></tr>
+                            <tr><td colspan="4" class="px-6 py-12 text-center text-gray-500"><i class="fas fa-circle-notch fa-spin mr-2"></i> Cargando base de datos...</td></tr>
                         </tbody>
                     </table>
+                </div>
+                <div class="bg-[#18181b] px-6 py-3 border-t border-gray-800 text-xs text-gray-500 flex justify-between">
+                    <span id="clientCount">0 registros</span>
                 </div>
             </div>
         </main>
     </div>
 
-    <div id="clientModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-50 backdrop-blur-sm p-4">
-        <div class="bg-gray-900 border border-gray-700 rounded-lg w-full max-w-2xl shadow-2xl">
-            <div class="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-900 rounded-t-lg">
-                <div><h3 class="text-xl font-serif text-white" id="modalTitle">Nuevo Cliente</h3></div>
-                <button onclick="closeModal()" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
+    <div id="clientModal" class="fixed inset-0 bg-black/95 hidden items-center justify-center z-50 backdrop-blur-sm p-4">
+        <div class="bg-[#121214] border border-gray-700 rounded-2xl w-full max-w-3xl shadow-2xl relative flex flex-col max-h-[90vh]">
+            
+            <div class="px-6 py-5 border-b border-gray-800 bg-[#18181b] rounded-t-2xl flex justify-between items-center">
+                <div>
+                    <h3 class="text-xl font-serif text-white flex items-center gap-2">
+                        <i class="fas fa-user-plus text-soriano-red"></i> 
+                        <span id="modalTitle">Nuevo Cliente</span>
+                    </h3>
+                </div>
+                <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-gray-800 text-gray-400 hover:text-white hover:bg-red-900 flex items-center justify-center transition">
+                    <i class="fas fa-times"></i>
+                </button>
             </div>
             
-            <form id="clientForm" class="p-6 space-y-4">
+            <form id="clientForm" class="p-6 overflow-y-auto custom-scrollbar">
                 <input type="hidden" id="clientId">
                 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs text-gray-400 mb-1 uppercase">Nombre Completo</label>
-                        <input type="text" id="clientName" required class="input-soriano text-white">
-                    </div>
-                    <div>
-                        <label class="block text-xs text-gray-400 mb-1 uppercase">ID / NIT</label>
-                        <input type="text" id="clientIdNum" class="input-soriano">
-                    </div>
-                    <div>
-                        <label class="block text-xs text-gray-400 mb-1 uppercase">Teléfono</label>
-                        <input type="tel" id="clientPhone" class="input-soriano">
-                    </div>
-                    <div>
-                        <label class="block text-xs text-gray-400 mb-1 uppercase">Email</label>
-                        <input type="email" id="clientEmail" class="input-soriano">
-                    </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    
                     <div class="md:col-span-2">
-                        <label class="block text-xs text-gray-400 mb-1 uppercase">Dirección</label>
-                        <input type="text" id="clientAddress" class="input-soriano">
+                        <label class="block text-xs text-gray-400 mb-2 uppercase font-bold ml-1">Nombre Completo / Razón Social</label>
+                        <div class="relative">
+                            <i class="fas fa-user absolute left-4 top-3.5 text-gray-500"></i>
+                            <input type="text" id="clientName" required class="w-full bg-black border border-gray-700 text-white text-sm rounded-lg pl-10 pr-4 py-3 focus:border-soriano-gold outline-none placeholder-gray-600 transition" placeholder="Ej. Juan Pérez">
+                        </div>
                     </div>
-                </div>
 
-                <div class="pt-4 flex justify-end space-x-3 border-t border-gray-800 mt-4">
-                    <button type="button" onclick="closeModal()" class="btn-outline text-xs">Cancelar</button>
-                    <button type="submit" class="btn-primary">Guardar Datos</button>
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-2 uppercase font-bold ml-1">Identificación (CC / NIT)</label>
+                        <div class="relative">
+                            <i class="fas fa-id-card absolute left-4 top-3.5 text-gray-500"></i>
+                            <input type="text" id="clientIdNum" class="w-full bg-black border border-gray-700 text-white text-sm rounded-lg pl-10 pr-4 py-3 focus:border-soriano-gold outline-none placeholder-gray-600" placeholder="Ej. 123456789">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs text-gray-400 mb-2 uppercase font-bold ml-1">Teléfono / WhatsApp</label>
+                        <div class="relative">
+                            <i class="fas fa-phone absolute left-4 top-3.5 text-gray-500"></i>
+                            <input type="tel" id="clientPhone" class="w-full bg-black border border-gray-700 text-white text-sm rounded-lg pl-10 pr-4 py-3 focus:border-soriano-gold outline-none placeholder-gray-600" placeholder="Ej. 300 123 4567">
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block text-xs text-gray-400 mb-2 uppercase font-bold ml-1">Correo Electrónico</label>
+                        <div class="relative">
+                            <i class="fas fa-envelope absolute left-4 top-3.5 text-gray-500"></i>
+                            <input type="email" id="clientEmail" class="w-full bg-black border border-gray-700 text-white text-sm rounded-lg pl-10 pr-4 py-3 focus:border-soriano-gold outline-none placeholder-gray-600" placeholder="ejemplo@correo.com">
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-2">
+                        <label class="block text-xs text-gray-400 mb-2 uppercase font-bold ml-1">Dirección Física</label>
+                        <div class="relative">
+                            <i class="fas fa-map-marker-alt absolute left-4 top-3.5 text-gray-500"></i>
+                            <input type="text" id="clientAddress" class="w-full bg-black border border-gray-700 text-white text-sm rounded-lg pl-10 pr-4 py-3 focus:border-soriano-gold outline-none placeholder-gray-600" placeholder="Calle 123 # 45 - 67">
+                        </div>
+                    </div>
                 </div>
             </form>
+
+            <div class="p-5 border-t border-gray-800 bg-[#18181b] rounded-b-2xl flex justify-end gap-3">
+                <button type="button" onclick="closeModal()" class="px-6 py-2.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 text-sm font-medium transition">Cancelar</button>
+                <button type="button" onclick="document.getElementById('clientForm').dispatchEvent(new Event('submit'))" class="btn-primary shadow-lg shadow-red-900/20 px-8 py-2.5 rounded-lg text-sm font-bold flex items-center">
+                    <i class="fas fa-save mr-2"></i> Guardar Cliente
+                </button>
+            </div>
         </div>
     </div>
 
