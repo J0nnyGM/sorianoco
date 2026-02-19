@@ -7,110 +7,153 @@
     <link href="../css/styles.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="icon" href="data:,">
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #18181b; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
+        .glass-card { background: linear-gradient(145deg, rgba(24,24,27,0.8) 0%, rgba(18,18,20,0.9) 100%); backdrop-filter: blur(10px); }
+    </style>
 </head>
 <body class="bg-soriano-dark text-gray-300 font-sans antialiased">
 
     <div id="app-layout" class="flex h-screen overflow-hidden">
-        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-soriano-dark p-6 md:p-12 w-full">
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-soriano-dark p-6 md:p-12 w-full flex flex-col">
             
-            <div class="mb-8 flex justify-between items-end">
+            <div class="mb-10 flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
                 <div>
-                    <h1 class="text-3xl md:text-4xl font-serif text-white mb-2">Panel de Control</h1>
-                    <p class="text-gray-500 text-sm">Resumen financiero y operativo en tiempo real.</p>
+                    <h1 class="text-4xl font-serif text-white mb-2 flex items-center gap-3">
+                        <span class="bg-soriano-red/20 text-soriano-red border border-soriano-red/50 w-12 h-12 rounded-xl flex items-center justify-center text-xl shadow-lg shadow-red-900/20">
+                            <i class="fas fa-chart-pie"></i>
+                        </span>
+                        Panel de Control
+                    </h1>
+                    <p class="text-gray-500 text-sm ml-16">Resumen financiero y operativo en tiempo real.</p>
                 </div>
-                <div class="flex gap-2">
-                    <select class="bg-black border border-gray-700 text-white text-sm rounded p-2">
-                        <option>Este Mes</option>
+                <div class="bg-[#121214] border border-gray-800 rounded-lg p-1.5 shadow-inner">
+                    <select class="bg-gray-900 border-none text-white text-sm rounded-md px-4 py-2 outline-none cursor-pointer hover:bg-gray-800 transition">
+                        <option>Mes Actual</option>
                     </select>
                 </div>
             </div>
 
-            <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4">Finanzas</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-                <div class="bg-green-900/20 border border-green-900/50 p-6 rounded-lg">
-                    <h3 class="text-xs font-bold text-green-500 uppercase mb-2">Ventas (Mes)</h3>
-                    <p class="text-2xl font-serif text-white" id="kpiSales">$0</p>
+            <h2 class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2"><i class="fas fa-wallet text-gray-600"></i> Finanzas del Mes</h2>
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+                
+                <div class="glass-card border border-green-900/30 p-6 rounded-2xl shadow-xl relative overflow-hidden group">
+                    <div class="absolute -right-6 -top-6 text-green-500/10 text-8xl group-hover:scale-110 transition-transform"><i class="fas fa-arrow-trend-up"></i></div>
+                    <h3 class="text-[10px] font-bold text-green-500 uppercase tracking-widest mb-1 relative z-10">Ingresos / Ventas</h3>
+                    <p class="text-3xl font-serif text-white font-bold tracking-wide relative z-10" id="kpiSales">$0</p>
                 </div>
-                <div class="bg-red-900/20 border border-red-900/50 p-6 rounded-lg">
-                    <h3 class="text-xs font-bold text-red-400 uppercase mb-2">Gastos (Mes)</h3>
-                    <p class="text-2xl font-serif text-white" id="kpiExpenses">$0</p>
+
+                <div class="glass-card border border-red-900/30 p-6 rounded-2xl shadow-xl relative overflow-hidden group">
+                    <div class="absolute -right-6 -top-6 text-red-500/10 text-8xl group-hover:scale-110 transition-transform"><i class="fas fa-arrow-trend-down"></i></div>
+                    <h3 class="text-[10px] font-bold text-red-400 uppercase tracking-widest mb-1 relative z-10">Gastos / Egresos</h3>
+                    <p class="text-3xl font-serif text-white font-bold tracking-wide relative z-10" id="kpiExpenses">$0</p>
                 </div>
-                <div class="bg-blue-900/20 border border-blue-900/50 p-6 rounded-lg">
-                    <h3 class="text-xs font-bold text-blue-400 uppercase mb-2">Utilidad Estimada</h3>
-                    <p class="text-2xl font-serif text-white" id="kpiProfit">$0</p>
+
+                <div class="glass-card border border-blue-900/30 p-6 rounded-2xl shadow-xl relative overflow-hidden group">
+                    <div class="absolute -right-6 -top-6 text-blue-500/10 text-8xl group-hover:scale-110 transition-transform"><i class="fas fa-scale-balanced"></i></div>
+                    <h3 class="text-[10px] font-bold text-blue-400 uppercase tracking-widest mb-1 relative z-10">Utilidad Neta</h3>
+                    <p class="text-3xl font-serif text-white font-bold tracking-wide relative z-10" id="kpiProfit">$0</p>
                 </div>
-                <div class="bg-yellow-900/20 border border-yellow-900/50 p-6 rounded-lg">
-                    <h3 class="text-xs font-bold text-yellow-500 uppercase mb-2">Cartera Pendiente</h3>
-                    <p class="text-2xl font-serif text-white" id="kpiPortfolio">$0</p>
+
+                <div class="glass-card border border-soriano-gold/30 p-6 rounded-2xl shadow-xl relative overflow-hidden group">
+                    <div class="absolute -right-6 -top-6 text-yellow-500/10 text-8xl group-hover:scale-110 transition-transform"><i class="fas fa-hand-holding-usd"></i></div>
+                    <h3 class="text-[10px] font-bold text-soriano-gold uppercase tracking-widest mb-1 relative z-10">Cartera Pendiente</h3>
+                    <p class="text-3xl font-serif text-white font-bold tracking-wide relative z-10" id="kpiPortfolio">$0</p>
                 </div>
             </div>
 
-            <h2 class="text-xs font-bold text-gray-500 uppercase tracking-widest mb-4 mt-8">Control de Producción & Inventario</h2>
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+            <h2 class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-4 flex items-center gap-2"><i class="fas fa-cogs text-gray-600"></i> Producción & Inventario</h2>
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-10">
                 
-                <div class="lg:col-span-2 bg-black/40 border border-gray-800 rounded-lg p-6">
-                    <div class="flex justify-between items-center mb-6">
-                        <h3 class="text-lg font-serif text-white">Órdenes en Proceso</h3>
-                        <span class="bg-gray-800 text-xs px-2 py-1 rounded text-gray-400 border border-gray-700" id="totalActiveOrders">0 Total</span>
+                <div class="lg:col-span-2 bg-[#121214] border border-gray-800 rounded-2xl p-6 md:p-8 shadow-2xl relative overflow-hidden">
+                    <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-purple-500/5 to-transparent rounded-bl-full pointer-events-none"></div>
+                    
+                    <div class="flex justify-between items-center mb-8 relative z-10">
+                        <h3 class="text-xl font-serif text-white">Estado de Producción</h3>
+                        <span class="bg-gray-800 text-xs px-4 py-1.5 rounded-full text-white font-bold border border-gray-700 shadow-sm" id="totalActiveOrders">0 Activas</span>
                     </div>
                     
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
-                        <div class="bg-gray-900/50 p-4 rounded border border-gray-800 text-center hover:border-gray-600 transition">
-                            <i class="fas fa-pencil-ruler text-purple-400 mb-2 text-xl"></i>
-                            <p class="text-2xl font-bold text-white" id="countDiseno">0</p>
-                            <p class="text-[10px] uppercase text-gray-500">Diseño</p>
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-6 relative z-10">
+                        <div class="flex flex-col">
+                            <div class="flex justify-between items-end mb-2">
+                                <span class="text-[10px] uppercase font-bold tracking-widest text-purple-400">Diseño</span>
+                                <span class="text-xl font-bold text-white" id="countDiseno">0</span>
+                            </div>
+                            <div class="w-full bg-gray-800 rounded-full h-1.5">
+                                <div class="bg-purple-500 h-1.5 rounded-full transition-all duration-1000 w-0" id="barDiseno"></div>
+                            </div>
                         </div>
-                        <div class="bg-gray-900/50 p-4 rounded border border-gray-800 text-center hover:border-gray-600 transition">
-                            <i class="fas fa-cut text-blue-400 mb-2 text-xl"></i>
-                            <p class="text-2xl font-bold text-white" id="countCorte">0</p>
-                            <p class="text-[10px] uppercase text-gray-500">Corte</p>
+
+                        <div class="flex flex-col">
+                            <div class="flex justify-between items-end mb-2">
+                                <span class="text-[10px] uppercase font-bold tracking-widest text-blue-400">Corte</span>
+                                <span class="text-xl font-bold text-white" id="countCorte">0</span>
+                            </div>
+                            <div class="w-full bg-gray-800 rounded-full h-1.5">
+                                <div class="bg-blue-500 h-1.5 rounded-full transition-all duration-1000 w-0" id="barCorte"></div>
+                            </div>
                         </div>
-                        <div class="bg-gray-900/50 p-4 rounded border border-gray-800 text-center hover:border-gray-600 transition">
-                            <i class="fas fa-tshirt text-yellow-500 mb-2 text-xl animate-pulse"></i>
-                            <p class="text-2xl font-bold text-white" id="countConfeccion">0</p>
-                            <p class="text-[10px] uppercase text-gray-500">Confección</p>
+
+                        <div class="flex flex-col">
+                            <div class="flex justify-between items-end mb-2">
+                                <span class="text-[10px] uppercase font-bold tracking-widest text-soriano-gold">Confección</span>
+                                <span class="text-xl font-bold text-white" id="countConfeccion">0</span>
+                            </div>
+                            <div class="w-full bg-gray-800 rounded-full h-1.5">
+                                <div class="bg-soriano-gold h-1.5 rounded-full transition-all duration-1000 w-0" id="barConfeccion"></div>
+                            </div>
                         </div>
-                        <div class="bg-gray-900/50 p-4 rounded border border-gray-800 text-center hover:border-gray-600 transition">
-                            <i class="fas fa-check-circle text-green-400 mb-2 text-xl"></i>
-                            <p class="text-2xl font-bold text-white" id="countPrueba">0</p>
-                            <p class="text-[10px] uppercase text-gray-500">Prueba/Final</p>
+
+                        <div class="flex flex-col">
+                            <div class="flex justify-between items-end mb-2">
+                                <span class="text-[10px] uppercase font-bold tracking-widest text-green-400">Prueba</span>
+                                <span class="text-xl font-bold text-white" id="countPrueba">0</span>
+                            </div>
+                            <div class="w-full bg-gray-800 rounded-full h-1.5">
+                                <div class="bg-green-500 h-1.5 rounded-full transition-all duration-1000 w-0" id="barPrueba"></div>
+                            </div>
                         </div>
                     </div>
                 </div>
 
-                <div class="bg-black/40 border border-gray-800 rounded-lg p-6 flex flex-col justify-center relative overflow-hidden group cursor-pointer" onclick="window.location.href='inventario.html'">
-                    <div class="absolute right-[-20px] top-[-20px] text-gray-800 text-9xl opacity-20 group-hover:scale-110 transition-transform">
+                <div class="bg-[#121214] border border-gray-800 rounded-2xl p-6 md:p-8 flex flex-col justify-center relative overflow-hidden group cursor-pointer shadow-2xl hover:border-gray-600 transition-colors" onclick="window.location.href='inventario.html'">
+                    <div class="absolute -right-6 -bottom-6 text-gray-800 text-9xl group-hover:scale-110 group-hover:text-gray-700 transition-all duration-500">
                         <i class="fas fa-boxes"></i>
                     </div>
-                    <h3 class="text-sm font-medium text-gray-400 uppercase tracking-wide mb-2">Valor en Bodega</h3>
-                    <p class="text-3xl font-serif text-white mb-1" id="kpiInventoryValue">$0</p>
-                    <p class="text-xs text-gray-500">Costo total de materiales en stock.</p>
-                    
-                    <div class="mt-6 pt-6 border-t border-gray-800">
-                        <div class="flex justify-between items-center">
-                            <span class="text-xs text-orange-500"><i class="fas fa-exclamation-triangle mr-1"></i> Stock Bajo</span>
-                            <span class="text-white font-bold" id="kpiLowStock">0 ítems</span>
+                    <div class="relative z-10">
+                        <h3 class="text-[10px] font-bold text-gray-500 uppercase tracking-widest mb-2">Valor en Bodega</h3>
+                        <p class="text-4xl font-serif text-white font-bold mb-1" id="kpiInventoryValue">$0</p>
+                        <p class="text-xs text-gray-500 mb-6">Costo total del stock actual.</p>
+                        
+                        <div class="pt-6 border-t border-gray-800/80">
+                            <div class="flex justify-between items-center bg-gray-900/50 p-3 rounded-lg border border-gray-800">
+                                <span class="text-xs text-orange-500 font-bold uppercase tracking-wider"><i class="fas fa-exclamation-triangle mr-1"></i> Stock Bajo</span>
+                                <span class="text-white font-mono font-bold" id="kpiLowStock">0</span>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="bg-black/40 border border-gray-800 rounded-lg overflow-hidden">
-                <div class="p-6 border-b border-gray-800">
-                    <h3 class="text-lg font-serif text-white">Próximas Entregas</h3>
+            <div class="bg-[#121214] border border-gray-800 rounded-2xl overflow-hidden shadow-2xl flex-1 flex flex-col min-h-0">
+                <div class="p-6 border-b border-gray-800 bg-[#18181b] flex justify-between items-center">
+                    <h3 class="text-lg font-serif text-white flex items-center gap-2"><i class="fas fa-calendar-check text-gray-500"></i> Próximas Entregas</h3>
+                    <a href="ordenes.html" class="text-xs text-blue-400 hover:text-white transition">Ver todas &rarr;</a>
                 </div>
-                <div class="overflow-x-auto">
-                    <table class="w-full text-left text-sm">
-                        <thead class="bg-gray-900/50 text-gray-500 uppercase text-xs">
+                <div class="overflow-x-auto flex-1 custom-scrollbar">
+                    <table class="w-full text-left text-sm border-collapse">
+                        <thead class="bg-[#121214] text-gray-500 uppercase text-[10px] tracking-wider sticky top-0 z-10 shadow-sm">
                             <tr>
-                                <th class="px-6 py-3">Cliente</th>
-                                <th class="px-6 py-3">Detalle</th>
-                                <th class="px-6 py-3 text-right">Entrega</th>
-                                <th class="px-6 py-3 text-right">Saldo</th>
+                                <th class="px-6 py-4 font-bold border-b border-gray-800">Cliente / Orden</th>
+                                <th class="px-6 py-4 font-bold border-b border-gray-800">Detalle</th>
+                                <th class="px-6 py-4 font-bold text-right border-b border-gray-800">Fecha Entrega</th>
+                                <th class="px-6 py-4 font-bold text-right border-b border-gray-800">Saldo Pendiente</th>
                             </tr>
                         </thead>
-                        <tbody id="recentOrdersTable" class="divide-y divide-gray-800">
-                            <tr><td colspan="4" class="p-6 text-center text-gray-500">Cargando...</td></tr>
+                        <tbody id="recentOrdersTable" class="divide-y divide-gray-800/50 bg-[#18181b] text-gray-300">
+                            <tr><td colspan="4" class="p-8 text-center text-gray-500 italic"><i class="fas fa-circle-notch fa-spin mr-2"></i> Cargando entregas...</td></tr>
                         </tbody>
                     </table>
                 </div>

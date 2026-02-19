@@ -106,5 +106,16 @@ service cloud.firestore {
       allow write: if isContabilidad();
     }
 
+    // 12. WHATSAPP CRM (Chats y Mensajes)
+    match /whatsapp_chats/{phoneId} {
+      // Solo los administradores pueden leer y gestionar los chats
+      allow read, write: if isAdmin();
+      
+      // Subcolección de mensajes dentro de cada chat
+      match /messages/{messageId} {
+        allow read, write: if isAdmin();
+      }
+    }
+
   }
 }

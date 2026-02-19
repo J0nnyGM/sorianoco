@@ -1,5 +1,5 @@
-import { auth, db, signOut, onAuthStateChanged } from '../js/firebase-init.js';
-import { doc, getDoc, collection, query, where, onSnapshot, orderBy, limit, getAggregateFromServer, sum } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
+import { auth, db, onAuthStateChanged } from '../js/firebase-init.js';
+import { doc, getDoc, collection, query, where, onSnapshot, orderBy } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js";
 import { updateSidebarUser } from '../js/global-components.js';
 
 // KPIs Financieros
@@ -8,11 +8,15 @@ const kpiExpenses = document.getElementById('kpiExpenses');
 const kpiProfit = document.getElementById('kpiProfit');
 const kpiPortfolio = document.getElementById('kpiPortfolio');
 
-// KPIs Operativos (Contadores)
+// KPIs Operativos (Contadores y Barras)
 const countDiseno = document.getElementById('countDiseno');
 const countCorte = document.getElementById('countCorte');
 const countConfeccion = document.getElementById('countConfeccion');
 const countPrueba = document.getElementById('countPrueba');
+const barDiseno = document.getElementById('barDiseno');
+const barCorte = document.getElementById('barCorte');
+const barConfeccion = document.getElementById('barConfeccion');
+const barPrueba = document.getElementById('barPrueba');
 const totalActiveOrders = document.getElementById('totalActiveOrders');
 
 // Inventario
@@ -31,76 +35,74 @@ onAuthStateChanged(auth, async (user) => {
         if (docSnap.exists()) {
             updateSidebarUser(user, docSnap.data());
             
-            // Iniciar todos los listeners
-            subscribeOrderMetrics(); // Operativo + Cartera
-            subscribeFinancials();   // Ventas y Gastos
-            subscribeInventory();    // Valor Stock
+            subscribeOrderMetrics(); 
+            subscribeFinancials();   
+            subscribeInventory();    
         }
     } else {
         window.location.href = '../auth/login.html';
     }
 });
 
-// 2. MÉTRICAS DE ÓRDENES (Operativo + Cartera)
+// 2. MÉTRICAS DE ÓRDENES (Operativo + Cartera + Barras de Progreso)
 function subscribeOrderMetrics() {
-    // Solo traemos órdenes que NO están entregadas para el tablero operativo
-    // Esto ahorra lecturas y se enfoca en lo pendiente
     const q = query(collection(db, "orders"), where("status", "!=", "entregado"), orderBy("status"), orderBy("deadline", "asc"));
 
     onSnapshot(q, (snapshot) => {
-        // Reset contadores
         let counts = { diseno: 0, corte: 0, confeccion: 0, prueba: 0, terminado: 0 };
         let totalActive = 0;
-        let pendingMoney = 0; // Cartera
+        let pendingMoney = 0; 
         const upcomingDeliveries = [];
 
         snapshot.forEach(doc => {
             const data = doc.data();
             totalActive++;
-            
-            // Sumar cartera
             pendingMoney += (data.balanceDue || 0);
 
-            // Contar por estado
             if (counts[data.status] !== undefined) {
                 counts[data.status]++;
             } else if (data.status === 'acabados') {
-                counts.prueba++; // Agrupar acabados con prueba
+                counts.prueba++; 
             }
 
-            // Guardar para tabla (próximas entregas)
-            if (upcomingDeliveries.length < 5) {
-                upcomingDeliveries.push(data);
-            }
+            // Guardar solo las 5 más próximas para la tabla
+            if (upcomingDeliveries.length < 5) upcomingDeliveries.push(data);
         });
 
-        // Actualizar DOM Operativo
+        const totalPrueba = counts.prueba + counts.terminado;
+
+        // Actualizar Textos
         if(countDiseno) countDiseno.textContent = counts.diseno;
         if(countCorte) countCorte.textContent = counts.corte;
         if(countConfeccion) countConfeccion.textContent = counts.confeccion;
-        // Agrupamos Prueba + Terminado para simplicidad visual, o sumalos
-        if(countPrueba) countPrueba.textContent = counts.prueba + counts.terminado;
-        if(totalActiveOrders) totalActiveOrders.textContent = `${totalActive} Total`;
+        if(countPrueba) countPrueba.textContent = totalPrueba;
+        if(totalActiveOrders) totalActiveOrders.textContent = `${totalActive} Activas`;
 
-        // Actualizar Cartera (KPI Financiero)
+        // Actualizar Barras Visuales (Porcentajes)
+        if (totalActive > 0) {
+            if(barDiseno) barDiseno.style.width = `${(counts.diseno / totalActive) * 100}%`;
+            if(barCorte) barCorte.style.width = `${(counts.corte / totalActive) * 100}%`;
+            if(barConfeccion) barConfeccion.style.width = `${(counts.confeccion / totalActive) * 100}%`;
+            if(barPrueba) barPrueba.style.width = `${(totalPrueba / totalActive) * 100}%`;
+        } else {
+            [barDiseno, barCorte, barConfeccion, barPrueba].forEach(bar => { if(bar) bar.style.width = '0%'; });
+        }
+
+        // Actualizar Cartera
         if(kpiPortfolio) kpiPortfolio.textContent = cop.format(pendingMoney);
 
         // Renderizar Tabla
         renderTable(upcomingDeliveries);
-        
-        // Recalcular Utilidad (Simple visual update)
         updateProfitCalc();
     });
 }
 
 // 3. MÉTRICAS FINANCIERAS (Ventas y Gastos del MES ACTUAL)
 function subscribeFinancials() {
-    // Calcular rango del mes actual
     const date = new Date();
     const startOfMonth = new Date(date.getFullYear(), date.getMonth(), 1);
     const endOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0, 23, 59, 59);
 
-    // Consulta de Transacciones (Ingresos y Gastos)
     const q = query(
         collection(db, "transactions"), 
         where("date", ">=", startOfMonth),
@@ -122,28 +124,21 @@ function subscribeFinancials() {
             }
         });
 
-        if(kpiSales) {
-            kpiSales.textContent = cop.format(income);
-            kpiSales.dataset.val = income;
-        }
-        if(kpiExpenses) {
-            kpiExpenses.textContent = cop.format(expenses);
-            kpiExpenses.dataset.val = expenses;
-        }
+        if(kpiSales) { kpiSales.textContent = cop.format(income); kpiSales.dataset.val = income; }
+        if(kpiExpenses) { kpiExpenses.textContent = cop.format(expenses); kpiExpenses.dataset.val = expenses; }
 
         updateProfitCalc();
     });
 }
 
 function updateProfitCalc() {
-    // Calculo simple: Ingresos - Gastos (en base a lo cargado en DOM)
     const inc = parseFloat(kpiSales?.dataset.val || 0);
     const exp = parseFloat(kpiExpenses?.dataset.val || 0);
     const profit = inc - exp;
 
     if(kpiProfit) {
         kpiProfit.textContent = cop.format(profit);
-        kpiProfit.className = `text-2xl font-serif ${profit >= 0 ? 'text-green-400' : 'text-red-400'}`;
+        kpiProfit.className = `text-3xl font-serif font-bold tracking-wide relative z-10 ${profit >= 0 ? 'text-blue-400' : 'text-red-400'}`;
     }
 }
 
@@ -161,14 +156,13 @@ function subscribeInventory() {
             const min = parseFloat(data.minStock) || 0;
 
             totalValue += (qty * cost);
-
             if (qty <= min) lowStockCount++;
         });
 
         if(kpiInventoryValue) kpiInventoryValue.textContent = cop.format(totalValue);
         if(kpiLowStock) {
-            kpiLowStock.textContent = `${lowStockCount} ítems`;
-            kpiLowStock.className = lowStockCount > 0 ? "text-orange-500 font-bold" : "text-gray-500";
+            kpiLowStock.textContent = `${lowStockCount} Ítems`;
+            kpiLowStock.className = lowStockCount > 0 ? "text-orange-500 font-mono font-bold" : "text-gray-500 font-mono";
         }
     });
 }
@@ -177,25 +171,32 @@ function subscribeInventory() {
 function renderTable(orders) {
     if (!recentTable) return;
     if (orders.length === 0) {
-        recentTable.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-gray-500">No hay entregas pendientes.</td></tr>`;
+        recentTable.innerHTML = `<tr><td colspan="4" class="p-8 text-center text-gray-500 italic">No hay entregas pendientes.</td></tr>`;
         return;
     }
 
     recentTable.innerHTML = orders.map(order => {
-        // Resumen de prendas
-        let summary = "Varios";
+        let summary = "Varios Ítems";
         if (order.items && order.items.length === 1) summary = order.items[0].description;
         else if (order.items) summary = `${order.items.length} Prendas`;
 
         const balance = order.balanceDue || 0;
+        const balanceHtml = balance > 0 
+            ? `<span class="text-red-400 font-bold">${cop.format(balance)}</span>`
+            : `<span class="bg-green-900/30 text-green-400 border border-green-900 px-2 py-1 rounded text-[10px] uppercase font-bold tracking-widest"><i class="fas fa-check mr-1"></i> Pagado</span>`;
         
         return `
-            <tr class="hover:bg-gray-800/30 transition-colors">
-                <td class="px-6 py-3 text-white font-medium">${order.clientName}</td>
-                <td class="px-6 py-3 text-gray-400 text-xs">${summary}</td>
-                <td class="px-6 py-3 text-right text-soriano-gold font-mono text-xs">${order.deadline}</td>
-                <td class="px-6 py-3 text-right font-mono text-xs ${balance > 0 ? 'text-red-400' : 'text-green-500'}">
-                    ${balance > 0 ? cop.format(balance) : 'Pagado'}
+            <tr class="hover:bg-white/5 transition-colors group">
+                <td class="px-6 py-4">
+                    <div class="text-white font-medium text-sm group-hover:text-blue-400 transition">${order.clientName}</div>
+                    <div class="text-[10px] text-gray-500 font-mono mt-0.5">Orden #${order.orderNumber}</div>
+                </td>
+                <td class="px-6 py-4 text-gray-400 text-xs">${summary}</td>
+                <td class="px-6 py-4 text-right">
+                    <span class="text-soriano-gold font-mono text-sm font-bold bg-yellow-900/10 border border-yellow-900/30 px-3 py-1.5 rounded-lg">${order.deadline}</span>
+                </td>
+                <td class="px-6 py-4 text-right font-mono text-sm">
+                    ${balanceHtml}
                 </td>
             </tr>
         `;

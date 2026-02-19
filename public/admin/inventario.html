@@ -11,9 +11,8 @@
         input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
         
-        /* Estilos para las pestañas de filtro */
         .filter-tab.active {
-            background-color: #CE2029; /* Soriano Red */
+            background-color: #CE2029;
             color: white;
             border-color: #CE2029;
         }
@@ -33,7 +32,7 @@
                         </h1>
                         <p class="text-gray-500 text-sm ml-11">Control de materias primas, productos y archivo.</p>
                     </div>
-                    <button onclick="openModal()" class="btn-primary flex items-center justify-center shadow-lg shadow-red-900/20 px-6 py-2.5 text-sm rounded-full hidden md:flex">
+                    <button id="btnNewItemDesktop" onclick="openModal()" class="btn-primary flex items-center justify-center shadow-lg shadow-red-900/20 px-6 py-2.5 text-sm rounded-full hidden md:flex">
                         <i class="fas fa-plus mr-2"></i> Nuevo Ítem
                     </button>
                 </div>
@@ -52,7 +51,7 @@
                         <input type="text" id="searchInput" placeholder="Buscar ítem, SKU..." class="w-full bg-black border border-gray-700 rounded-full py-2.5 pl-10 pr-4 text-sm text-white focus:border-white outline-none transition placeholder-gray-600">
                     </div>
                     
-                    <button onclick="openModal()" class="btn-primary flex items-center justify-center shadow-lg shadow-red-900/20 px-6 py-2.5 text-sm rounded-full md:hidden w-full">
+                    <button id="btnNewItemMobile" onclick="openModal()" class="btn-primary flex items-center justify-center shadow-lg shadow-red-900/20 px-6 py-2.5 text-sm rounded-full md:hidden w-full">
                         <i class="fas fa-plus mr-2"></i> Nuevo Ítem
                     </button>
                 </div>
@@ -67,9 +66,9 @@
                                 <th class="px-6 py-4 font-bold tracking-wider border-b border-gray-800">Descripción / SKU</th>
                                 <th class="px-6 py-4 font-bold tracking-wider border-b border-gray-800">Tipo</th>
                                 <th class="px-6 py-4 font-bold tracking-wider border-b border-gray-800 text-right">Stock</th>
-                                <th class="px-6 py-4 font-bold tracking-wider border-b border-gray-800 text-right text-green-500">Costo</th>
+                                <th id="headerCost" class="px-6 py-4 font-bold tracking-wider border-b border-gray-800 text-right text-green-500">Costo</th>
                                 <th class="px-6 py-4 font-bold tracking-wider border-b border-gray-800 text-right text-soriano-gold">Venta</th>
-                                <th class="px-6 py-4 font-bold tracking-wider border-b border-gray-800 text-right">Acciones</th>
+                                <th id="headerActions" class="px-6 py-4 font-bold tracking-wider border-b border-gray-800 text-right">Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="inventoryTableBody" class="divide-y divide-gray-800 text-sm">
@@ -87,7 +86,6 @@
 
     <div id="itemModal" class="fixed inset-0 bg-black/95 hidden items-center justify-center z-50 backdrop-blur-sm p-4">
         <div class="bg-[#121214] border border-gray-700 rounded-2xl w-full max-w-3xl shadow-2xl relative flex flex-col max-h-[90vh]">
-            
             <div class="px-6 py-5 border-b border-gray-800 bg-[#18181b] rounded-t-2xl flex justify-between items-center">
                 <div>
                     <h3 class="text-xl font-serif text-white flex items-center gap-2">
@@ -106,7 +104,6 @@
                 <input type="hidden" id="itemStatus" value="active"> 
 
                 <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
-                    
                     <div class="lg:col-span-4 space-y-4">
                         <div class="bg-black border border-gray-700 rounded-xl p-4 flex flex-col items-center justify-center text-center relative group">
                             <div class="w-32 h-32 bg-gray-800 rounded-lg overflow-hidden flex items-center justify-center border border-gray-600 mb-3 shadow-inner">
@@ -130,12 +127,11 @@
                         <div>
                             <label class="block text-xs text-gray-400 mb-1.5 uppercase font-bold">Categoría</label>
                             <select id="itemType" class="w-full bg-black border border-gray-700 text-white text-sm rounded-lg p-2.5 focus:border-soriano-gold outline-none">
-                                </select>
+                            </select>
                         </div>
                     </div>
 
                     <div class="lg:col-span-8 space-y-5">
-                        
                         <div class="grid grid-cols-2 gap-4">
                             <div class="col-span-2 md:col-span-1">
                                 <label class="block text-xs text-gray-400 mb-1.5 uppercase font-bold">Nombre del Ítem</label>
@@ -148,7 +144,6 @@
                         </div>
 
                         <div class="bg-gray-900/50 p-4 rounded-xl border border-gray-800">
-                            
                             <div id="simpleStockSection" class="grid grid-cols-3 gap-4">
                                 <div>
                                     <label class="block text-xs text-gray-400 mb-1.5 uppercase font-bold">Cantidad</label>
@@ -168,14 +163,12 @@
                                     <input type="number" id="itemMin" min="0" class="w-full bg-black border border-red-900/50 text-white text-sm rounded-lg p-2.5 text-center outline-none focus:border-red-500">
                                 </div>
                             </div>
-
                             <div id="sizesStockSection" class="hidden">
                                 <div class="flex justify-between items-center mb-3 border-b border-gray-800 pb-2">
                                     <label class="text-xs text-gray-400 uppercase font-bold">Stock por Tallas</label>
                                     <span class="text-xs text-gray-500">Total: <span id="totalSizesDisplay" class="text-white font-bold">0</span> unds</span>
                                 </div>
-                                <div id="sizesContainer" class="grid grid-cols-4 sm:grid-cols-6 gap-3">
-                                    </div>
+                                <div id="sizesContainer" class="grid grid-cols-4 sm:grid-cols-6 gap-3"></div>
                             </div>
                         </div>
 
@@ -195,7 +188,6 @@
                                 </div>
                             </div>
                         </div>
-
                     </div>
                 </div>
             </form>
@@ -218,7 +210,6 @@
         <div class="relative max-w-full max-h-full flex flex-col items-center justify-center">
             <img id="fullSizeImage" src="" class="max-w-full max-h-[85vh] rounded-lg shadow-2xl object-contain border border-gray-800">
             <p class="text-gray-500 text-xs mt-2 font-mono">Click en cualquier lugar para cerrar</p>
-            
             <button onclick="closeImageModal()" class="absolute -top-10 right-0 text-gray-400 hover:text-white text-2xl transition">
                 <i class="fas fa-times"></i>
             </button>

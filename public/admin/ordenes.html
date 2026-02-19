@@ -3,129 +3,147 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Soriano | Producción</title>
+    <title>Soriano | Órdenes de Producción</title>
     <link href="../css/styles.css" rel="stylesheet">
-
-    <style>
-    /* Estilo para que los inputs placeholder se vean bien */
-    ::placeholder { color: #52525b; opacity: 1; } /* Zinc-600 */
-    
-    /* Scrollbar personalizado delgado para el modal */
-    .custom-scrollbar::-webkit-scrollbar {
-        width: 6px;
-        height: 6px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-track {
-        background: #0f0f10; 
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb {
-        background: #3f3f46; 
-        border-radius: 3px;
-    }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-        background: #52525b; 
-    }
-    
-    /* Input type number sin flechas por defecto para customizarlas */
-    input[type=number]::-webkit-inner-spin-button, 
-    input[type=number]::-webkit-outer-spin-button { 
-        -webkit-appearance: none; 
-        margin: 0; 
-    }
-    </style>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="icon" href="data:,">
+    <style>
+        ::placeholder { color: #52525b; opacity: 1; }
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #18181b; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #52525b; }
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        .status-tab.active { background-color: #ce2029 !important; color: white !important; border-color: #ce2029 !important; }
+    </style>
 </head>
 <body class="bg-soriano-dark text-gray-300 font-sans antialiased">
 
     <div id="app-layout" class="flex h-screen overflow-hidden">
-        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-soriano-dark p-6 md:p-12 w-full">
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-soriano-dark p-6 md:p-12 w-full flex flex-col">
             
-            <div class="flex flex-col gap-6 mb-8">
-                <div class="flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
-                    <div>
-                        <h1 class="text-3xl font-serif text-white mb-1">Producción</h1>
-                        <p class="text-gray-500 text-sm">Tablero de control de taller.</p>
-                    </div>
-                        <a href="nueva-orden.html" class="btn-primary flex items-center shadow-lg shadow-red-900/20">
-                            <i class="fas fa-plus mr-2"></i> Nueva Orden
-                        </a>
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-6">
+                <div>
+                    <h1 class="text-3xl font-serif text-white mb-2 flex items-center gap-3">
+                        <span class="bg-blue-900/30 text-blue-400 border border-blue-900 w-10 h-10 rounded-lg flex items-center justify-center text-lg shadow-lg">
+                            <i class="fas fa-tshirt"></i>
+                        </span>
+                        Órdenes de Producción
+                    </h1>
+                    <p class="text-gray-500 text-sm ml-14 max-w-md">Tablero de control de taller, seguimiento y entregas.</p>
                 </div>
-
-                <div class="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 border-b border-gray-800 pb-4">
-                    <div class="flex space-x-2 overflow-x-auto w-full md:w-auto no-scrollbar" id="statusTabs">
-                        <button onclick="filterByStatus('todas')" class="status-tab active px-4 py-2 rounded-full text-xs font-bold uppercase transition bg-gray-800 text-white border border-gray-600" data-status="todas">Todas</button>
-                        
-                        <button onclick="filterByStatus('recibido')" class="status-tab px-4 py-2 rounded-full text-xs font-bold uppercase transition text-gray-500 hover:text-white" data-status="recibido">Recibido</button>
-                        
-                        <button onclick="filterByStatus('en_proceso')" class="status-tab px-4 py-2 rounded-full text-xs font-bold uppercase transition text-gray-500 hover:text-white" data-status="en_proceso">En Proceso</button>
-                        <button onclick="filterByStatus('procesado')" class="status-tab px-4 py-2 rounded-full text-xs font-bold uppercase transition text-gray-500 hover:text-white" data-status="procesado">Procesado</button>
-                        <button onclick="filterByStatus('entregado')" class="status-tab px-4 py-2 rounded-full text-xs font-bold uppercase transition text-gray-500 hover:text-white" data-status="entregado">Entregado</button>
-                        <button onclick="filterByStatus('anulada')" class="status-tab px-4 py-2 rounded-full text-xs font-bold uppercase transition text-gray-500 hover:text-red-400" data-status="anulada">Anuladas</button>
-                    </div>
-                    <div class="relative w-full md:w-64">
-                        <input type="text" id="searchInput" placeholder="Buscar Cliente o # Orden..." class="w-full bg-black border border-gray-700 rounded-full py-2 px-4 pl-10 text-sm focus:border-soriano-gold outline-none text-white">
-                        <i class="fas fa-search absolute left-3 top-2.5 text-gray-500"></i>
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex flex-col h-full justify-between">
                 
-                <div class="bg-gray-900 border border-gray-800 rounded-lg overflow-hidden shadow-sm mb-4">
-                    <div class="overflow-x-auto"> <table class="w-full text-left border-collapse">
-                            <thead class="bg-black/40 text-[10px] uppercase text-gray-500 font-bold tracking-wider">
-                                <tr>
-                                    <th class="px-6 py-4 border-b border-gray-800">Orden / Estado</th>
-                                    <th class="px-6 py-4 border-b border-gray-800">Cliente</th>
-                                    <th class="px-6 py-4 border-b border-gray-800 hidden md:table-cell">Detalle</th>
-                                    <th class="px-6 py-4 border-b border-gray-800 text-center hidden md:table-cell">Entrega</th>
-                                    <th class="px-6 py-4 border-b border-gray-800 text-right">
-                                        <div class="flex flex-col items-end">
-                                            <span>Saldo</span>
-                                            <span class="text-[9px] text-gray-500 font-normal normal-case">Total Orden</span>
-                                        </div>
-                                    </th>   
-                                    <th class="px-6 py-4 border-b border-gray-800 text-right">Acciones</th>
-                                </tr>
-                            </thead>
-                            <tbody id="ordersGrid" class="divide-y divide-gray-800 text-sm text-gray-300">
-                                <tr>
-                                    <td colspan="6" class="px-6 py-12 text-center text-gray-500">
-                                        <i class="fas fa-circle-notch fa-spin mr-2"></i> Cargando órdenes...
-                                    </td>
-                                </tr>
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
+                <a href="nueva-orden.html" class="btn-primary flex items-center shadow-lg shadow-blue-900/20 px-6 py-2.5 rounded-full text-sm font-bold bg-white text-black hover:bg-gray-200 transition">
+                    <i class="fas fa-plus mr-2 text-blue-600"></i> Crear Nueva Orden
+                </a>
+            </div>
 
-                <div class="bg-gray-900 border border-gray-800 rounded-lg p-4 flex justify-between items-center mt-auto" id="paginationControls">
-                    <span class="text-xs text-gray-500" id="pageIndicator">Página 1</span>
+            <div class="flex flex-col xl:flex-row justify-between items-start xl:items-center gap-4 mb-6 bg-[#121214] p-4 rounded-xl border border-gray-800 shadow-sm">
+                
+                <div class="flex space-x-2 overflow-x-auto w-full xl:w-auto custom-scrollbar pb-2 xl:pb-0" id="statusTabs">
+                    <button onclick="filterByStatus('todas')" class="status-tab active px-5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition bg-gray-800 text-gray-400 border border-gray-700 whitespace-nowrap" data-status="todas">General</button>
+                    <button onclick="filterByStatus('recibido')" class="status-tab px-5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition bg-gray-900 text-gray-500 border border-gray-800 hover:text-white whitespace-nowrap" data-status="recibido">1. Recibido</button>
+                    <button onclick="filterByStatus('en_proceso')" class="status-tab px-5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition bg-gray-900 text-gray-500 border border-gray-800 hover:text-white whitespace-nowrap" data-status="en_proceso">2. En Proceso</button>
+                    <button onclick="filterByStatus('procesado')" class="status-tab px-5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition bg-gray-900 text-gray-500 border border-gray-800 hover:text-white whitespace-nowrap" data-status="procesado">3. Prueba / Final</button>
+                    <button onclick="filterByStatus('entregado')" class="status-tab px-5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition bg-gray-900 text-gray-500 border border-gray-800 hover:text-white whitespace-nowrap" data-status="entregado"><i class="fas fa-check text-green-500 mr-1"></i> Entregado</button>
+                    <button onclick="filterByStatus('anulada')" class="status-tab px-5 py-2 rounded-lg text-[10px] font-bold uppercase tracking-wider transition bg-gray-900 text-gray-500 border border-gray-800 hover:text-red-400 whitespace-nowrap" data-status="anulada"><i class="fas fa-ban text-red-500 mr-1"></i> Anuladas</button>
+                </div>
+                
+                <div class="relative w-full xl:w-72 flex-shrink-0">
+                    <i class="fas fa-search absolute left-4 top-3 text-gray-500 text-sm"></i>
+                    <input type="text" id="searchInput" placeholder="Buscar Cliente o # Orden..." class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg py-2.5 px-4 pl-10 text-sm focus:border-soriano-gold outline-none text-white transition shadow-inner">
+                </div>
+            </div>
+
+            <div class="bg-[#121214] border border-gray-800 rounded-2xl overflow-hidden shadow-2xl flex-1 flex flex-col min-h-0">
+                <div class="overflow-x-auto flex-1 custom-scrollbar"> 
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-[#18181b] text-[10px] uppercase text-gray-500 font-bold tracking-wider sticky top-0 z-20 shadow-sm border-b border-gray-800">
+                            <tr>
+                                <th class="px-6 py-4">Orden & Estado</th>
+                                <th class="px-6 py-4">Cliente</th>
+                                <th class="px-6 py-4 hidden md:table-cell">Resumen Prendas</th>
+                                <th class="px-6 py-4 text-center hidden md:table-cell">Fecha Entrega</th>
+                                <th class="px-6 py-4 text-right">Finanzas</th>   
+                                <th class="px-6 py-4 text-right">Gestión</th>
+                            </tr>
+                        </thead>
+                        <tbody id="ordersGrid" class="divide-y divide-gray-800/50 text-sm text-gray-300">
+                            <tr>
+                                <td colspan="6" class="px-6 py-12 text-center text-gray-500 italic">
+                                    <i class="fas fa-circle-notch fa-spin mr-2"></i> Cargando centro de producción...
+                                </td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+                
+                <div class="bg-[#18181b] px-6 py-3 border-t border-gray-800 flex justify-between items-center" id="paginationControls">
+                    <span class="text-[10px] text-gray-500 font-bold uppercase tracking-widest" id="pageIndicator">Página 1</span>
                     <div class="flex space-x-2">
-                        <button id="prevPageBtn" class="px-3 py-1 bg-gray-800 border border-gray-700 rounded text-gray-400 text-xs hover:text-white disabled:opacity-50"><i class="fas fa-chevron-left mr-1"></i> Anterior</button>
-                        <button id="nextPageBtn" class="px-3 py-1 bg-gray-800 border border-gray-700 rounded text-gray-400 text-xs hover:text-white disabled:opacity-50">Siguiente <i class="fas fa-chevron-right ml-1"></i></button>
+                        <button id="prevPageBtn" class="px-4 py-2 bg-[#121214] border border-gray-700 rounded-lg text-gray-400 text-xs hover:text-white disabled:opacity-50 transition shadow-sm font-bold"><i class="fas fa-chevron-left mr-1"></i> Ant</button>
+                        <button id="nextPageBtn" class="px-4 py-2 bg-[#121214] border border-gray-700 rounded-lg text-gray-400 text-xs hover:text-white disabled:opacity-50 transition shadow-sm font-bold">Sig <i class="fas fa-chevron-right ml-1"></i></button>
                     </div>
                 </div>
             </div>
+            
         </main>
     </div>
 
-
     <div id="payModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-[60] backdrop-blur-sm p-4">
-        <div class="bg-gray-900 border border-gray-700 rounded-lg max-w-sm w-full shadow-2xl">
-            <div class="p-6 border-b border-gray-800"><h3 class="text-lg font-serif text-white">Cerrar Cuenta</h3><p class="text-xs text-gray-500" id="payModalSubtitle">Orden #...</p></div>
-            <form id="payForm" class="p-6 space-y-4">
+        <div class="bg-[#121214] border border-gray-700 rounded-2xl max-w-sm w-full shadow-2xl relative overflow-hidden">
+            <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-green-500/10 to-transparent rounded-bl-full pointer-events-none"></div>
+            
+            <div class="p-6 border-b border-gray-800 bg-[#18181b] relative z-10">
+                <h3 class="text-xl font-serif text-white flex items-center gap-2"><i class="fas fa-hand-holding-usd text-green-500"></i> Cobro y Entrega</h3>
+                <p class="text-xs text-gray-500 font-mono tracking-widest mt-1" id="payModalSubtitle">Orden #...</p>
+            </div>
+            
+            <form id="payForm" class="p-6 space-y-5 relative z-10">
                 <input type="hidden" id="payOrderId">
-                <div class="bg-black/40 p-4 rounded border border-gray-700 text-center"><p class="text-xs text-gray-400 uppercase tracking-widest mb-1">Saldo Pendiente</p><p class="text-3xl font-serif text-red-500" id="payBalanceDisplay">$0</p></div>
-                <div class="border-b border-gray-800 pb-4">
-                    <div class="flex items-center justify-between mb-2"><label class="text-[10px] text-gray-500 uppercase">Aplicar Descuento</label><button type="button" onclick="toggleDiscount()" class="text-xs text-soriano-gold hover:underline"><i class="fas fa-tag mr-1"></i> Agregar</button></div>
-                    <div id="discountContainer" class="hidden"><input type="text" id="discountInput" class="input-soriano text-right text-yellow-500" placeholder="$0" oninput="calculateFinalPayment(this)"><p class="text-[10px] text-gray-500 mt-1 text-right">Nuevo saldo: <span id="newBalancePreview" class="text-white font-bold">-</span></p></div>
+                
+                <div class="bg-black/40 p-5 rounded-xl border border-gray-800 text-center shadow-inner">
+                    <p class="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1">Saldo Pendiente</p>
+                    <p class="text-4xl font-mono font-bold text-red-500" id="payBalanceDisplay">$0</p>
                 </div>
-                <div><label class="block text-xs text-gray-400 mb-1 uppercase">Monto a Recibir ($)</label><input type="text" id="payAmount" required class="input-soriano text-xl font-bold text-white text-center" oninput="formatCurrencyInput(this)"></div>
-                <div><label class="block text-xs text-gray-400 mb-1 uppercase">Cuenta de Ingreso</label><select id="payAccount" required class="input-soriano appearance-none border-green-900/50"><option value="">Seleccionar cuenta...</option></select></div>
-                <div class="flex items-center space-x-2 pt-2 bg-gray-800/50 p-2 rounded"><input type="checkbox" id="markDelivered" class="w-4 h-4 text-green-600 bg-gray-700 border-gray-600 rounded"><label for="markDelivered" class="text-xs text-gray-300 cursor-pointer">Marcar como ENTREGADO</label></div>
-                <div class="pt-2 flex justify-end space-x-2"><button type="button" onclick="closePayModal()" class="btn-outline text-xs">Cancelar</button><button type="submit" class="btn-primary w-full shadow-lg shadow-green-900/20">Confirmar</button></div>
+                
+                <div class="border-b border-gray-800 pb-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <label class="text-[10px] text-gray-500 uppercase font-bold">Aplicar Descuento Especial</label>
+                        <button type="button" onclick="toggleDiscount()" class="text-[10px] bg-yellow-900/20 text-soriano-gold border border-yellow-900/50 px-2 py-1 rounded hover:bg-yellow-900/50 transition uppercase font-bold">
+                            <i class="fas fa-tag mr-1"></i> Agregar
+                        </button>
+                    </div>
+                    <div id="discountContainer" class="hidden space-y-2">
+                        <input type="text" id="discountInput" class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-yellow-500 font-bold font-mono text-right focus:border-soriano-gold outline-none" placeholder="$0" oninput="calculateFinalPayment(this)">
+                        <p class="text-[10px] text-gray-500 text-right bg-gray-900/50 p-2 rounded-lg border border-gray-800">
+                            Nuevo saldo a pagar: <span id="newBalancePreview" class="text-white font-bold font-mono text-sm ml-1">-</span>
+                        </p>
+                    </div>
+                </div>
+                
+                <div>
+                    <label class="block text-[10px] text-gray-400 mb-1.5 uppercase font-bold tracking-wider">Monto a Recibir ($)</label>
+                    <input type="text" id="payAmount" required class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-3 text-2xl font-bold text-green-400 font-mono text-center focus:border-green-500 outline-none transition" oninput="formatCurrencyInput(this)">
+                </div>
+                
+                <div>
+                    <label class="block text-[10px] text-gray-400 mb-1.5 uppercase font-bold tracking-wider">Cuenta de Ingreso</label>
+                    <select id="payAccount" required class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-3 text-sm text-white focus:border-soriano-gold outline-none transition appearance-none">
+                        <option value="">Seleccionar cuenta...</option>
+                    </select>
+                </div>
+                
+                <div class="flex items-center space-x-3 pt-2 bg-green-900/10 p-3 rounded-lg border border-green-900/30 mt-2">
+                    <input type="checkbox" id="markDelivered" class="w-4 h-4 text-green-500 bg-[#0f0f10] border-gray-600 rounded focus:ring-green-500 focus:ring-2 cursor-pointer">
+                    <label for="markDelivered" class="text-xs text-green-400 font-bold uppercase tracking-wider cursor-pointer">Finalizar y Marcar como Entregado</label>
+                </div>
+                
+                <div class="pt-4 flex gap-3">
+                    <button type="button" onclick="closePayModal()" class="flex-1 px-4 py-3 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 text-sm font-bold transition">Cancelar</button>
+                    <button type="submit" class="flex-1 bg-green-600 hover:bg-green-500 text-white py-3 rounded-lg text-sm font-bold shadow-lg shadow-green-900/20 transition">Confirmar Pago</button>
+                </div>
             </form>
         </div>
     </div>

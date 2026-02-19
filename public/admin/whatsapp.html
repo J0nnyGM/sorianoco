@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Soriano | WhatsApp CRM</title>
+    <link href="../css/styles.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="icon" href="data:,">
+</head>
+<body class="bg-soriano-dark text-gray-300 font-sans antialiased">
+
+    <div id="app-layout" class="flex h-screen overflow-hidden">
+        <main class="flex-1 flex flex-col p-0 md:p-6 w-full h-full">
+            
+            <div id="crmHeader" class="mb-4 md:mb-6 px-4 pt-4 md:px-0 md:pt-0 shrink-0 transition-all">
+                <h1 class="text-3xl font-serif text-white mb-1 flex items-center gap-3">
+                    <span class="bg-green-600 text-white w-8 h-8 rounded flex items-center justify-center text-sm"><i class="fab fa-whatsapp"></i></span>
+                    WhatsApp CRM
+                </h1>
+                <p class="text-gray-500 text-sm md:ml-11">Atención al cliente en tiempo real.</p>
+            </div>
+
+            <div class="flex-1 bg-[#121214] md:border border-gray-800 md:rounded-xl overflow-hidden shadow-xl flex flex-col md:flex-row min-h-0 relative">
+                
+                <div id="chatsListContainer" class="w-full md:w-1/3 border-r border-gray-800 flex flex-col h-full bg-[#18181b] transition-all">
+                    <div class="p-4 border-b border-gray-800">
+                        <input type="text" id="searchChat" placeholder="Buscar por nombre o número..." class="w-full bg-black border border-gray-700 rounded-lg p-2.5 text-sm text-white focus:border-green-500 outline-none transition">
+                    </div>
+                    
+                    <div class="flex border-b border-gray-800">
+                        <button id="tabOpen" onclick="setChatFilter('open')" class="flex-1 py-3 md:py-2 text-xs font-bold text-green-400 border-b-2 border-green-500 transition">
+                            <i class="fas fa-inbox mr-1"></i> Abiertos
+                        </button>
+                        <button id="tabResolved" onclick="setChatFilter('resolved')" class="flex-1 py-3 md:py-2 text-xs font-bold text-gray-500 border-b-2 border-transparent hover:text-gray-300 transition">
+                            <i class="fas fa-check-double mr-1"></i> Resueltos
+                        </button>
+                    </div>
+
+                    <div id="chatsList" class="flex-1 overflow-y-auto custom-scrollbar divide-y divide-gray-800/50">
+                        <div class="p-6 text-center text-gray-500 text-sm"><i class="fas fa-spinner fa-spin"></i> Cargando chats...</div>
+                    </div>
+                </div>
+
+                <div class="w-full md:w-2/3 flex-col h-full bg-[#121214] relative flex max-md:hidden transition-all" id="chatWindow">
+                    
+                    <div class="p-3 md:p-4 border-b border-gray-800 bg-[#18181b] flex justify-between items-center h-16 flex-shrink-0">
+                        <div class="flex items-center gap-2 md:gap-3 min-w-0">
+                            <button onclick="window.closeChatMobile()" class="md:hidden text-gray-400 hover:text-white px-2 py-1 transition shrink-0">
+                                <i class="fas fa-arrow-left text-xl"></i>
+                            </button>
+
+                            <div class="w-9 h-9 md:w-10 md:h-10 rounded-full bg-gray-700 flex items-center justify-center text-white font-bold shrink-0" id="currentChatAvatar">S</div>
+                            <div class="min-w-0">
+                                <h3 class="text-white font-bold text-sm flex items-center gap-2 truncate" id="currentChatName">Selecciona un chat</h3>
+                                <p class="text-xs text-gray-500 font-mono truncate" id="currentChatPhone">-</p>
+                            </div>
+                        </div>
+                        <div class="flex gap-2 items-center shrink-0">
+                            <div id="clientCrmInfo" class="hidden items-center shrink-0"></div>
+                            <button class="text-gray-400 hover:text-white px-2 py-1 md:px-3 bg-gray-800 rounded border border-gray-700 text-xs hidden transition shrink-0" id="btnResolveChat" title="Marcar Resuelto">
+                                <i class="fas fa-check md:hidden"></i><span class="hidden md:inline">Marcar Resuelto</span>
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="messagesList" class="flex-1 overflow-y-auto custom-scrollbar p-4 md:p-6 bg-black/40 space-y-4">
+                        <div class="text-center text-gray-600 text-sm mt-10">
+                            <i class="fab fa-whatsapp text-4xl mb-3 opacity-20"></i>
+                            <p>Selecciona una conversación para empezar a chatear.</p>
+                        </div>
+                    </div>
+
+                    <div id="sessionExpiredAlert" class="hidden bg-red-900/40 border-t border-b border-red-900 text-red-400 px-4 py-2 text-xs text-center flex-shrink-0">
+                        <i class="fas fa-exclamation-triangle mr-1"></i> 
+                        La sesión expiró. El cliente debe responder para reabrir el chat libre.
+                    </div>
+
+                    <div class="px-3 py-2 border-t border-gray-800 bg-[#121214] flex gap-2 overflow-x-auto no-scrollbar scroll-smooth" id="quickRepliesBar">
+                        <button onclick="insertQuickReply('¡Hola! 👋 Gracias por comunicarte con Soriano. ¿En qué podemos ayudarte hoy?')" class="whitespace-nowrap px-3 py-1.5 rounded-full bg-gray-800 border border-gray-700 text-xs text-gray-400 hover:text-white hover:bg-gray-700 transition">👋 Saludo</button>
+                        <button onclick="insertQuickReply('Nuestra cuenta Bancolombia es: Ahorros 123-456789-00 a nombre de Soriano SAS. NIT: 900.xxx.xxx')" class="whitespace-nowrap px-3 py-1.5 rounded-full bg-gray-800 border border-gray-700 text-xs text-gray-400 hover:text-white hover:bg-gray-700 transition">🏦 Datos Bancarios</button>
+                        <button onclick="insertQuickReply('Estamos ubicados en [Tu Dirección Aquí]. Nuestro horario de atención es de Lunes a Viernes de 8am a 6pm.')" class="whitespace-nowrap px-3 py-1.5 rounded-full bg-gray-800 border border-gray-700 text-xs text-gray-400 hover:text-white hover:bg-gray-700 transition">📍 Ubicación</button>
+                        <button onclick="insertQuickReply('Tu orden ya se encuentra lista para entrega. Puedes pasar a recogerla cuando gustes.')" class="whitespace-nowrap px-3 py-1.5 rounded-full bg-gray-800 border border-gray-700 text-xs text-green-500 hover:text-green-400 hover:bg-gray-700 transition">✅ Orden Lista</button>
+                    </div>
+
+                    <div id="attachmentPreview" class="hidden px-4 py-3 bg-gray-900 border-t border-gray-800 flex items-center justify-between flex-shrink-0">
+                        <div class="flex items-center gap-3">
+                            <i id="attachmentIcon" class="fas fa-file-image text-2xl text-soriano-gold"></i>
+                            <div class="min-w-0">
+                                <p id="attachmentName" class="text-sm text-white font-bold truncate max-w-[150px] md:max-w-[200px]">archivo.jpg</p>
+                                <p id="attachmentSize" class="text-[10px] text-gray-500">0 KB</p>
+                            </div>
+                        </div>
+                        <button id="btnRemoveAttachment" class="text-gray-500 hover:text-red-500 px-2 py-1 transition">
+                            <i class="fas fa-times text-lg"></i>
+                        </button>
+                    </div>
+
+                    <div class="p-3 bg-[#18181b] flex gap-2 items-end flex-shrink-0 relative">
+                        <label class="w-12 h-12 flex items-center justify-center text-gray-400 hover:text-white bg-black hover:bg-gray-800 border border-gray-700 rounded-lg cursor-pointer transition shadow-inner shrink-0">
+                            <i class="fas fa-paperclip text-lg"></i>
+                            <input type="file" id="mediaInput" class="hidden" accept="image/*,application/pdf">
+                        </label>
+                        <textarea id="messageInput" rows="1" class="flex-1 bg-black border border-gray-700 rounded-lg p-3 text-sm text-white focus:border-green-500 outline-none resize-none min-h-[48px]" placeholder="Mensaje..." disabled></textarea>
+                        <button id="btnSendMessage" class="w-12 h-12 bg-green-600 hover:bg-green-500 text-white rounded-full flex items-center justify-center transition shadow-lg disabled:opacity-50 shrink-0" disabled>
+                            <i class="fas fa-paper-plane"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <div id="clientOrdersOverlay" class="fixed inset-0 bg-black/60 z-[70] hidden transition-opacity duration-300 backdrop-blur-sm" onclick="closeOrdersPanel()"></div>
+
+    <div id="clientOrdersPanel" class="fixed inset-y-0 right-0 z-[80] w-full md:w-[450px] bg-[#121214] border-l border-gray-800 shadow-2xl transform translate-x-full transition-transform duration-300 flex flex-col">
+        <div class="px-6 py-5 border-b border-gray-800 bg-[#18181b] flex justify-between items-center shrink-0">
+            <h3 class="text-lg font-serif text-white flex items-center gap-2">
+                <i class="fas fa-shopping-bag text-soriano-gold"></i> 
+                <span id="clientOrdersTitle">Órdenes del Cliente</span>
+            </h3>
+            <button onclick="closeOrdersPanel()" class="w-8 h-8 rounded-full bg-gray-800 text-gray-400 hover:text-white hover:bg-red-900 flex items-center justify-center transition">
+                <i class="fas fa-arrow-right"></i>
+            </button>
+        </div>
+        <div id="clientOrdersList" class="p-4 md:p-6 overflow-y-auto custom-scrollbar flex-1 space-y-4"></div>
+        <div class="p-4 border-t border-gray-800 bg-[#18181b] flex justify-between items-center shrink-0">
+            <p class="text-xs text-gray-500">Historial de compras</p>
+            <a id="linkFullProfile" href="#" class="px-4 py-2 bg-gray-800 hover:bg-soriano-gold hover:text-black text-gray-300 text-sm font-bold rounded-lg transition">
+                Ver Perfil Completo
+            </a>
+        </div>
+    </div>
+
+    <script type="module">
+        import { initAdminLayout } from '../js/global-components.js';
+        initAdminLayout('whatsapp'); 
+        import './whatsapp.js'; 
+    </script>
+</body>
+</html>

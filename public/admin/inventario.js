@@ -9,11 +9,18 @@ const itemsCount = document.getElementById('itemsCount');
 const inventoryValueDisplay = document.getElementById('inventoryValueDisplay');
 const searchInput = document.getElementById('searchInput');
 
+// Role UI Elements
+const headerCost = document.getElementById('headerCost');
+const headerActions = document.getElementById('headerActions');
+const btnNewItemDesktop = document.getElementById('btnNewItemDesktop');
+const btnNewItemMobile = document.getElementById('btnNewItemMobile');
+const filterTabs = document.getElementById('filterTabs'); // Contenedor de pestañas
+
 // Modal Elements
 const modal = document.getElementById('itemModal');
 const modalTitle = document.getElementById('modalTitle');
 const saveBtn = document.getElementById('saveBtn');
-const unarchiveBtn = document.getElementById('unarchiveBtn'); // Nuevo botón modal
+const unarchiveBtn = document.getElementById('unarchiveBtn');
 
 // Inputs Form
 const itemIdInput = document.getElementById('itemId');
@@ -42,7 +49,8 @@ const itemMin = document.getElementById('itemMin');
 
 // --- DATA ---
 let inventoryCache = [];
-let currentFilter = 'all'; // Estado del filtro actual
+let currentFilter = 'all'; 
+let currentUserRole = null; // Guardamos el rol globalmente
 
 const categories = {
     material: ['Tela', 'Hilo', 'Botón/Cierre', 'Adorno', 'Empaque', 'Otro'],
@@ -59,7 +67,6 @@ const sizeConfigs = {
     'Accesorio': ['Única']
 };
 
-// LISTA MAESTRA DE ORDEN PARA TALLAS
 const orderedSizes = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "2XL", "3XL", "Unica", "Única", "4", "6", "8", "10", "12", "14", "16", "18", "20", "28", "30", "32", "34", "36", "38", "40", "42", "44"];
 
 const copFormatter = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
@@ -70,16 +77,55 @@ onAuthStateChanged(auth, async (user) => {
     
     import("https://www.gstatic.com/firebasejs/10.9.0/firebase-firestore.js")
         .then(({ getDoc }) => getDoc(doc(db, "users", user.uid)))
-        .then(snap => { if(snap.exists()) updateSidebarUser(user, snap.data()) });
+        .then(snap => { 
+            if(snap.exists()) {
+                const userData = snap.data();
+                currentUserRole = userData.role; // Capturar rol
+                
+                // Si es vendedor, forzamos filtro inicial a 'producto'
+                if (currentUserRole === 'vendedor') {
+                    currentFilter = 'producto';
+                }
+
+                updateSidebarUser(user, userData);
+                updateRoleUI(); // Aplicar reglas visuales
+                applyFilters(); // Re-renderizar tabla
+            }
+        });
 
     subscribeInventory();
 });
 
+// --- Lógica de Roles (UI Estática y Filtros Visuales) ---
+function updateRoleUI() {
+    const isVendedor = currentUserRole === 'vendedor';
+    
+    // Si es vendedor, ocultamos encabezados, botones Y las pestañas de filtro
+    if (isVendedor) {
+        if(headerCost) headerCost.style.display = 'none';
+        if(headerActions) headerActions.style.display = 'none';
+        if(btnNewItemDesktop) btnNewItemDesktop.style.display = 'none';
+        if(btnNewItemMobile) btnNewItemMobile.style.display = 'none';
+        if(inventoryValueDisplay) inventoryValueDisplay.style.display = 'none'; 
+        if(filterTabs) filterTabs.style.display = 'none'; // Ocultar Pestañas para que no cambie vista
+    } else {
+        if(headerCost) headerCost.style.display = ''; 
+        if(headerActions) headerActions.style.display = '';
+        if(btnNewItemDesktop) btnNewItemDesktop.style.display = '';
+        if(btnNewItemMobile) btnNewItemMobile.style.display = '';
+        if(inventoryValueDisplay) inventoryValueDisplay.style.display = '';
+        if(filterTabs) filterTabs.style.display = '';
+    }
+}
+
 // --- 2. LÓGICA FILTROS (TABS) ---
 window.setFilter = (type) => {
+    // Si es vendedor, no permitimos cambiar el filtro manualmente a algo que no sea producto
+    if (currentUserRole === 'vendedor' && type !== 'producto') {
+        return; 
+    }
+
     currentFilter = type;
-    
-    // Actualizar estilo de botones
     document.querySelectorAll('.filter-tab').forEach(btn => {
         if (btn.dataset.type === type) {
             btn.className = "filter-tab active px-4 py-2 rounded-full text-xs font-bold uppercase transition bg-gray-800 text-gray-400 border border-gray-700 hover:text-white";
@@ -87,7 +133,6 @@ window.setFilter = (type) => {
             btn.className = "filter-tab px-4 py-2 rounded-full text-xs font-bold uppercase transition bg-gray-800 text-gray-400 border border-gray-700 hover:text-white";
         }
     });
-
     applyFilters();
 };
 
@@ -97,26 +142,37 @@ function applyFilters() {
     const term = searchInput.value.toLowerCase();
     
     const filtered = inventoryCache.filter(item => {
-        // Filtro de Estado: Si filtro es 'archived', solo muestro inactivos. Si es otro, solo activos.
-        const isArchived = item.status === 'archived';
-        if (currentFilter === 'archived' && !isArchived) return false;
-        if (currentFilter !== 'archived' && isArchived) return false;
+        
+        // --- REGLA ESTRICTA DE SEGURIDAD PARA VENDEDORES ---
+        if (currentUserRole === 'vendedor') {
+            // Si el ítem NO es producto terminado, lo descartamos inmediatamente
+            if (item.classification !== 'producto') return false;
+            // Si el ítem está archivado, también lo descartamos
+            if (item.status === 'archived') return false;
+        }
 
-        // Filtro de Tipo (Materia/Producto)
-        const matchesType = (currentFilter === 'all' || currentFilter === 'archived') ? true : item.classification === currentFilter;
+        // Filtro Normal para otros roles
+        if (currentUserRole !== 'vendedor') {
+            const isArchived = item.status === 'archived';
+            if (currentFilter === 'archived' && !isArchived) return false;
+            if (currentFilter !== 'archived' && isArchived) return false;
+            
+            // Filtro de Pestaña
+            const matchesType = (currentFilter === 'all' || currentFilter === 'archived') ? true : item.classification === currentFilter;
+            if (!matchesType) return false;
+        }
 
-        // Filtro de Texto
+        // Filtro de Texto (Buscador)
         const matchesTerm = item.name.toLowerCase().includes(term) || 
                             (item.sku && item.sku.toLowerCase().includes(term)) ||
                             item.type.toLowerCase().includes(term);
 
-        return matchesTerm && matchesType;
+        return matchesTerm;
     });
 
     renderTable(filtered);
 }
 
-// Función global para formatear inputs de moneda
 window.formatCurrencyInput = (input) => {
     let value = input.value.replace(/\D/g, ''); 
     if (value === '') { input.value = ''; return; }
@@ -188,10 +244,8 @@ function subscribeInventory() {
     const q = query(collection(db, "inventory"), orderBy("name"));
     onSnapshot(q, (snapshot) => {
         inventoryCache = [];
-        // Traemos todo, el filtrado de 'archived' lo hacemos en el cliente
         snapshot.forEach(doc => {
             const d = doc.data();
-            // Si no tiene status, asumimos 'active' por compatibilidad
             if (!d.status) d.status = 'active'; 
             inventoryCache.push({ id: doc.id, ...d });
         });
@@ -203,9 +257,12 @@ function renderTable(list) {
     itemsCount.textContent = `${list.length} ítems`;
     let totalValue = 0;
 
+    // Verificar Rol
+    const isVendedor = !currentUserRole || currentUserRole === 'vendedor';
+
     if (list.length === 0) {
         tableBody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-gray-500 italic">No hay resultados en esta vista.</td></tr>`;
-        inventoryValueDisplay.textContent = "Valor Costo Total: $0";
+        if(!isVendedor) inventoryValueDisplay.textContent = "Valor Costo Total: $0";
         return;
     }
 
@@ -214,13 +271,9 @@ function renderTable(list) {
         const totalQty = parseFloat(data.quantity || 0);
         totalValue += totalQty * (data.cost || 0);
 
-        // Lógica de Stock Visual (CON ORDENAMIENTO DE TALLAS)
         let stockHtml = '';
         if (isProduct && data.sizes) {
-            // 1. Convertir a Array
             const entries = Object.entries(data.sizes).filter(([_, qty]) => qty > 0);
-            
-            // 2. Ordenar usando la lista maestra
             entries.sort((a, b) => {
                 let indexA = orderedSizes.indexOf(a[0].toUpperCase());
                 let indexB = orderedSizes.indexOf(b[0].toUpperCase());
@@ -228,39 +281,34 @@ function renderTable(list) {
                 if (indexB === -1) indexB = 999;
                 return indexA - indexB;
             });
-
-            // 3. Generar HTML
-            const sizesHtml = entries
-                .map(([size, qty]) => `<span class="text-[10px] bg-gray-800 border border-gray-600 px-1.5 py-0.5 rounded text-gray-300 mr-1 mb-1 inline-block">${size}:${qty}</span>`)
-                .join('');
-            
-            stockHtml = `
-                <div class="flex flex-wrap justify-end gap-0.5 mb-1 max-w-[150px] ml-auto">${sizesHtml || '<span class="text-red-500 text-xs">Agotado</span>'}</div>
-                <div class="text-[10px] text-gray-500">Total: <strong>${totalQty}</strong> und</div>
-            `;
+            const sizesHtml = entries.map(([size, qty]) => `<span class="text-[10px] bg-gray-800 border border-gray-600 px-1.5 py-0.5 rounded text-gray-300 mr-1 mb-1 inline-block">${size}:${qty}</span>`).join('');
+            stockHtml = `<div class="flex flex-wrap justify-end gap-0.5 mb-1 max-w-[150px] ml-auto">${sizesHtml || '<span class="text-red-500 text-xs">Agotado</span>'}</div><div class="text-[10px] text-gray-500">Total: <strong>${totalQty}</strong> und</div>`;
         } else {
             const isLow = totalQty <= parseFloat(data.minStock || 0);
             stockHtml = `<div class="${isLow ? 'text-red-400 font-bold' : 'text-white'} text-sm">${totalQty} ${data.unit}</div>`;
         }
 
-        // Imagen
         const imgHtml = data.imageUrl 
             ? `<img src="${data.imageUrl}" class="w-10 h-10 rounded-lg object-cover border border-gray-700 cursor-pointer hover:scale-110 hover:border-soriano-gold transition z-10" onclick="window.viewImage('${data.imageUrl}')">` 
             : `<div class="w-10 h-10 rounded-lg bg-gray-800 flex items-center justify-center text-gray-600 border border-gray-700"><i class="fas fa-box"></i></div>`;
             
-        // Botón de acción (Depende si está archivado o no)
-        let deleteActionBtn;
-        if (data.status === 'archived') {
-            deleteActionBtn = `
-                <button onclick="window.restoreItem('${data.id}', '${data.name}')" class="w-8 h-8 rounded bg-gray-800 hover:bg-green-900/50 hover:text-green-400 text-gray-500 transition flex items-center justify-center" title="Restaurar">
-                    <i class="fas fa-trash-restore"></i>
-                </button>`;
-        } else {
-            deleteActionBtn = `
-                <button onclick="window.archiveItem('${data.id}', '${data.name}')" class="w-8 h-8 rounded bg-gray-800 hover:bg-red-900/50 hover:text-red-400 text-gray-500 transition flex items-center justify-center" title="Archivar">
-                    <i class="fas fa-archive"></i>
-                </button>`;
+        let actionButtons = '';
+        if (!isVendedor) {
+            let deleteActionBtn;
+            if (data.status === 'archived') {
+                deleteActionBtn = `<button onclick="window.restoreItem('${data.id}', '${data.name}')" class="w-8 h-8 rounded bg-gray-800 hover:bg-green-900/50 hover:text-green-400 text-gray-500 transition flex items-center justify-center" title="Restaurar"><i class="fas fa-trash-restore"></i></button>`;
+            } else {
+                deleteActionBtn = `<button onclick="window.archiveItem('${data.id}', '${data.name}')" class="w-8 h-8 rounded bg-gray-800 hover:bg-red-900/50 hover:text-red-400 text-gray-400 transition flex items-center justify-center" title="Archivar"><i class="fas fa-archive"></i></button>`;
+            }
+            actionButtons = `
+                <button onclick="window.editItem('${data.id}')" class="w-8 h-8 rounded bg-gray-800 hover:bg-soriano-gold hover:text-black text-gray-400 transition flex items-center justify-center" title="Editar"><i class="fas fa-pencil-alt"></i></button>
+                ${deleteActionBtn}
+            `;
         }
+
+        // Celdas Condicionales
+        const costCell = isVendedor ? '' : `<td class="px-6 py-4 text-right text-green-400 font-mono text-sm">${copFormatter.format(data.cost)}</td>`;
+        const actionsCell = isVendedor ? '' : `<td class="px-6 py-4 text-right whitespace-nowrap"><div class="flex justify-end gap-2"><a href="inventory-detail.html?id=${data.id}" class="w-8 h-8 rounded bg-gray-800 hover:bg-blue-900/30 hover:text-blue-400 text-gray-400 transition flex items-center justify-center" title="Ver Kardex"><i class="fas fa-chart-line"></i></a>${actionButtons}</div></td>`;
 
         return `
             <tr class="hover:bg-white/5 transition border-b border-gray-800/50 group">
@@ -270,44 +318,29 @@ function renderTable(list) {
                     <div class="text-xs text-gray-500 font-mono tracking-wide mt-0.5 bg-gray-900 inline-block px-1.5 rounded border border-gray-800">${data.sku}</div>
                 </td>
                 <td class="px-6 py-4">
-                    <span class="px-2 py-1 rounded text-xs border border-gray-700 bg-gray-800 text-gray-300 capitalize">
-                        ${data.type}
-                    </span>
+                    <span class="px-2 py-1 rounded text-xs border border-gray-700 bg-gray-800 text-gray-300 capitalize">${data.type}</span>
                 </td>
                 <td class="px-6 py-4 text-right">${stockHtml}</td>
-                <td class="px-6 py-4 text-right text-green-400 font-mono text-sm">
-                    ${copFormatter.format(data.cost)}
-                </td>
+                ${costCell}
                 <td class="px-6 py-4 text-right text-soriano-gold font-mono text-sm font-bold">
                     ${copFormatter.format(data.price || 0)}
                 </td>
-                <td class="px-6 py-4 text-right whitespace-nowrap">
-                    <div class="flex justify-end gap-2">
-                        <a href="inventory-detail.html?id=${data.id}" 
-                           class="w-8 h-8 rounded bg-gray-800 hover:bg-blue-900/30 hover:text-blue-400 text-gray-400 transition flex items-center justify-center" 
-                           title="Ver Kardex">
-                            <i class="fas fa-chart-line"></i>
-                        </a>
-
-                        <button onclick="window.editItem('${data.id}')" class="w-8 h-8 rounded bg-gray-800 hover:bg-soriano-gold hover:text-black text-gray-400 transition flex items-center justify-center" title="Editar">
-                            <i class="fas fa-pencil-alt"></i>
-                        </button>
-                        ${deleteActionBtn}
-                    </div>
-                </td>
+                ${actionsCell}
             </tr>
         `;
     }).join('');
 
-    inventoryValueDisplay.textContent = `Valor Costo Total: ${copFormatter.format(totalValue)}`;
+    if(!isVendedor) inventoryValueDisplay.textContent = `Valor Costo Total: ${copFormatter.format(totalValue)}`;
 }
 
-// --- 4. GUARDAR ---
+// --- 4. GUARDAR (Protegido) ---
 saveBtn.addEventListener('click', async (e) => {
     e.preventDefault();
-    
     if (!nameInput.value) { alert("Nombre requerido"); return; }
     
+    // BLOQUEO DE SEGURIDAD
+    if (currentUserRole === 'vendedor') { alert("No tienes permisos para realizar esta acción"); return; }
+
     const originalContent = saveBtn.innerHTML;
     saveBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i> Guardando...';
     saveBtn.disabled = true;
@@ -326,17 +359,10 @@ saveBtn.addEventListener('click', async (e) => {
         const price = parseInt(priceInput.value.replace(/\D/g, '')) || 0;
 
         let data = {
-            classification,
-            name: nameInput.value,
-            sku: finalSku,
-            type: typeSelect.value,
-            cost: cost,
-            price: price,
-            status: itemStatusInput.value || 'active', // Guardamos el estado
-            updatedAt: serverTimestamp()
+            classification, name: nameInput.value, sku: finalSku, type: typeSelect.value, cost: cost, price: price,
+            status: itemStatusInput.value || 'active', updatedAt: serverTimestamp()
         };
 
-        // Imagen
         let imageUrl = currentImageUrl.value;
         if (imageInput.files[0]) {
             const file = imageInput.files[0];
@@ -354,189 +380,69 @@ saveBtn.addEventListener('click', async (e) => {
                 if (val > 0) sizesObj[input.dataset.size] = val;
                 total += val;
             });
-            data.sizes = sizesObj;
-            data.quantity = total;
-            data.unit = 'und';
-            data.minStock = 0;
+            data.sizes = sizesObj; data.quantity = total; data.unit = 'und'; data.minStock = 0;
         } else {
-            data.quantity = parseFloat(itemQty.value || 0);
-            data.unit = itemUnit.value;
-            data.minStock = parseFloat(itemMin.value || 0);
-            data.sizes = null;
+            data.quantity = parseFloat(itemQty.value || 0); data.unit = itemUnit.value; data.minStock = parseFloat(itemMin.value || 0); data.sizes = null;
         }
 
-        if (id) {
-            await updateDoc(doc(db, "inventory", id), data);
-        } else {
-            data.createdAt = serverTimestamp();
-            data.status = 'active'; // Nuevos siempre activos
-            await addDoc(collection(db, "inventory"), data);
-        }
+        if (id) { await updateDoc(doc(db, "inventory", id), data); } 
+        else { data.createdAt = serverTimestamp(); data.status = 'active'; await addDoc(collection(db, "inventory"), data); }
         closeModal();
 
-    } catch (error) {
-        console.error("Error:", error);
-        alert("Error al guardar: " + error.message);
-    } finally {
-        saveBtn.innerHTML = originalContent;
-        saveBtn.disabled = false;
-    }
+    } catch (error) { console.error("Error:", error); alert("Error al guardar: " + error.message); } 
+    finally { saveBtn.innerHTML = originalContent; saveBtn.disabled = false; }
 });
 
-// --- 5. MODALES Y ACCIONES ---
+// --- 5. MODALES ---
 window.openModal = () => {
+    // BLOQUEO MODAL
+    if (currentUserRole === 'vendedor') { alert("Acceso Denegado"); return; }
+    
     document.getElementById('inventoryForm').reset();
-    itemIdInput.value = "";
-    currentImageUrl.value = "";
-    itemStatusInput.value = "active";
-    unarchiveBtn.classList.add('hidden');
-    
-    // Reset Imagen
-    imagePreview.src = "";
-    imagePreview.classList.add('hidden');
-    imageIcon.classList.remove('hidden');
-    
-    // A. HABILITAR EL COSTO
-    costInput.disabled = false;
-    costInput.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-gray-900');
-    costInput.placeholder = "0";
-
-    // B. HABILITAR LA CANTIDAD (STOCK INICIAL) - ¡NUEVO!
-    // Al crear un ítem nuevo, sí permitimos poner el stock inicial
-    itemQty.disabled = false;
-    itemQty.classList.remove('opacity-50', 'cursor-not-allowed', 'text-gray-500');
-    itemQty.classList.add('bg-black', 'text-white');
-    
-    // Habilitar inputs de tallas si existen
-    document.querySelectorAll('.size-input').forEach(input => {
-        input.disabled = false;
-        input.classList.remove('opacity-50', 'cursor-not-allowed');
-    });
-
-    classificationSelect.value = "material";
-    // Habilitar selectores clave
-    classificationSelect.disabled = false;
-    classificationSelect.classList.remove('opacity-50', 'cursor-not-allowed');
-
-    populateCategories();
-    updateFormUI();
-    
-    modalTitle.textContent = "Nuevo Ítem";
-    modal.classList.remove('hidden'); modal.classList.add('flex');
+    itemIdInput.value = ""; currentImageUrl.value = ""; itemStatusInput.value = "active"; unarchiveBtn.classList.add('hidden');
+    imagePreview.src = ""; imagePreview.classList.add('hidden'); imageIcon.classList.remove('hidden');
+    costInput.disabled = false; costInput.classList.remove('opacity-50', 'cursor-not-allowed', 'bg-gray-900'); costInput.placeholder = "0";
+    itemQty.disabled = false; itemQty.classList.remove('opacity-50', 'cursor-not-allowed', 'text-gray-500'); itemQty.classList.add('bg-black', 'text-white');
+    document.querySelectorAll('.size-input').forEach(input => { input.disabled = false; input.classList.remove('opacity-50', 'cursor-not-allowed'); });
+    classificationSelect.value = "material"; classificationSelect.disabled = false; classificationSelect.classList.remove('opacity-50', 'cursor-not-allowed');
+    populateCategories(); updateFormUI();
+    modalTitle.textContent = "Nuevo Ítem"; modal.classList.remove('hidden'); modal.classList.add('flex');
 };
 
 window.editItem = (id) => {
+    // BLOQUEO EDICIÓN
+    if (currentUserRole === 'vendedor') { return; }
+
     const data = inventoryCache.find(i => i.id === id);
     if (!data) return;
+    itemIdInput.value = id; nameInput.value = data.name; skuInput.value = data.sku; itemStatusInput.value = data.status || 'active';
+    if (data.status === 'archived') unarchiveBtn.classList.remove('hidden'); else unarchiveBtn.classList.add('hidden');
+    costInput.value = new Intl.NumberFormat('es-CO').format(data.cost || 0); priceInput.value = new Intl.NumberFormat('es-CO').format(data.price || 0);
+    costInput.disabled = true; costInput.classList.add('opacity-50', 'cursor-not-allowed', 'bg-gray-900');
+    classificationSelect.value = data.classification || 'material'; classificationSelect.disabled = true; classificationSelect.classList.add('opacity-50', 'cursor-not-allowed');
+    populateCategories(); typeSelect.value = data.type; updateFormUI();
 
-    itemIdInput.value = id;
-    nameInput.value = data.name;
-    skuInput.value = data.sku;
-    itemStatusInput.value = data.status || 'active';
-    
-    if (data.status === 'archived') {
-        unarchiveBtn.classList.remove('hidden');
-    } else {
-        unarchiveBtn.classList.add('hidden');
-    }
+    if (data.imageUrl) { currentImageUrl.value = data.imageUrl; imagePreview.src = data.imageUrl; imagePreview.classList.remove('hidden'); imageIcon.classList.add('hidden'); } 
+    else { currentImageUrl.value = ""; imagePreview.classList.add('hidden'); imageIcon.classList.remove('hidden'); }
 
-    costInput.value = new Intl.NumberFormat('es-CO').format(data.cost || 0);
-    priceInput.value = new Intl.NumberFormat('es-CO').format(data.price || 0);
-
-    // BLOQUEAR COSTO
-    costInput.disabled = true;
-    costInput.classList.add('opacity-50', 'cursor-not-allowed', 'bg-gray-900');
-
-    // BLOQUEAR TIPO (No se debe cambiar tipo de un item con historia)
-    classificationSelect.value = data.classification || 'material';
-    classificationSelect.disabled = true;
-    classificationSelect.classList.add('opacity-50', 'cursor-not-allowed');
-
-    populateCategories();
-    typeSelect.value = data.type;
-    updateFormUI();
-
-    // Imagen
-    if (data.imageUrl) {
-        currentImageUrl.value = data.imageUrl;
-        imagePreview.src = data.imageUrl;
-        imagePreview.classList.remove('hidden');
-        imageIcon.classList.add('hidden');
-    } else {
-        currentImageUrl.value = "";
-        imagePreview.classList.add('hidden');
-        imageIcon.classList.remove('hidden');
-    }
-
-    // --- AQUÍ ESTÁ EL CAMBIO SOLICITADO ---
-    // Cargar datos y BLOQUEAR la edición de cantidades
-    
     if (data.classification === 'producto') {
         renderSizeInputs();
         if (data.sizes) {
             document.querySelectorAll('.size-input').forEach(input => {
                 input.value = data.sizes[input.dataset.size] || '';
-                // Bloquear inputs de tallas
-                input.disabled = true;
-                input.classList.add('opacity-50', 'cursor-not-allowed');
+                input.disabled = true; input.classList.add('opacity-50', 'cursor-not-allowed');
             });
         }
         calculateTotalStock();
     } else {
-        itemQty.value = data.quantity;
-        itemUnit.value = data.unit;
-        itemMin.value = data.minStock;
-
-        // Bloquear input de cantidad simple
-        itemQty.disabled = true;
-        itemQty.classList.remove('bg-black', 'text-white');
-        itemQty.classList.add('opacity-50', 'cursor-not-allowed', 'text-gray-500', 'bg-gray-900');
+        itemQty.value = data.quantity; itemUnit.value = data.unit; itemMin.value = data.minStock;
+        itemQty.disabled = true; itemQty.classList.remove('bg-black', 'text-white'); itemQty.classList.add('opacity-50', 'cursor-not-allowed', 'text-gray-500', 'bg-gray-900');
     }
-
-    modalTitle.textContent = "Editar Ítem";
-    modal.classList.remove('hidden'); modal.classList.add('flex');
+    modalTitle.textContent = "Editar Ítem"; modal.classList.remove('hidden'); modal.classList.add('flex');
 };
 window.closeModal = () => { modal.classList.add('hidden'); modal.classList.remove('flex'); };
-
-// ACCIONES DE ARCHIVADO
-window.archiveItem = async (id, name) => { 
-    if(confirm(`¿Archivar "${name}"? Desaparecerá del inventario activo.`)) {
-        await updateDoc(doc(db, "inventory", id), { status: 'archived' });
-    }
-};
-
-window.restoreItem = async (id, name) => { 
-    if(confirm(`¿Restaurar "${name}" al inventario activo?`)) {
-        await updateDoc(doc(db, "inventory", id), { status: 'active' });
-    }
-};
-
-window.restoreItemFromModal = async () => {
-    const id = itemIdInput.value;
-    const name = nameInput.value;
-    if (!id) return;
-    
-    if(confirm(`¿Restaurar "${name}"?`)) {
-        await updateDoc(doc(db, "inventory", id), { status: 'active' });
-        closeModal();
-    }
-};
-
-// --- VISOR DE IMÁGENES ---
-window.viewImage = (url) => {
-    // Evitar que el click se propague si está dentro de una tabla
-    if (!url) return;
-    const modal = document.getElementById('imageViewerModal');
-    const img = document.getElementById('fullSizeImage');
-    
-    img.src = url;
-    modal.classList.remove('hidden');
-    modal.classList.add('flex');
-};
-
-window.closeImageModal = () => {
-    const modal = document.getElementById('imageViewerModal');
-    modal.classList.add('hidden');
-    modal.classList.remove('flex');
-    setTimeout(() => { document.getElementById('fullSizeImage').src = ""; }, 200); // Limpiar src al cerrar
-};
+window.archiveItem = async (id, name) => { if(confirm(`¿Archivar "${name}"? Desaparecerá del inventario activo.`)) await updateDoc(doc(db, "inventory", id), { status: 'archived' }); };
+window.restoreItem = async (id, name) => { if(confirm(`¿Restaurar "${name}" al inventario activo?`)) await updateDoc(doc(db, "inventory", id), { status: 'active' }); };
+window.restoreItemFromModal = async () => { const id = itemIdInput.value; const name = nameInput.value; if (!id) return; if(confirm(`¿Restaurar "${name}"?`)) { await updateDoc(doc(db, "inventory", id), { status: 'active' }); closeModal(); } };
+window.viewImage = (url) => { if (!url) return; const modal = document.getElementById('imageViewerModal'); const img = document.getElementById('fullSizeImage'); img.src = url; modal.classList.remove('hidden'); modal.classList.add('flex'); };
+window.closeImageModal = () => { const modal = document.getElementById('imageViewerModal'); modal.classList.add('hidden'); modal.classList.remove('flex'); setTimeout(() => { document.getElementById('fullSizeImage').src = ""; }, 200); };

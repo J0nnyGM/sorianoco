@@ -5,6 +5,7 @@ import { signOut } from "https://www.gstatic.com/firebasejs/10.9.0/firebase-auth
 // Define exactamente qué roles pueden acceder a qué página
 const routePermissions = {
     'dashboard': ['admin'],
+    'whatsapp': ['admin'], // <-- NUEVO: Restringido solo para admin
     'nueva-orden': ['all'], // 'all' significa admin, contabilidad y vendedor
     'ordenes': ['all'],
     'clientes': ['all'],
@@ -30,6 +31,7 @@ export function initAdminLayout(activePageId) {
             title: "Principal",
             items: [
                 { id: 'dashboard', label: 'Dashboard', icon: 'fa-home', href: 'index.html', roles: routePermissions['dashboard'] },
+                { id: 'whatsapp', label: 'WhatsApp CRM', icon: 'fab fa-whatsapp', href: 'whatsapp.html', roles: routePermissions['whatsapp'] }, // <-- NUEVO ÍTEM
             ]
         },
         {
@@ -87,11 +89,13 @@ export function initAdminLayout(activePageId) {
                                     }
 
                                     const rolesAttr = item.roles.join(',');
+                                    // Soportar íconos FAB (Marcas) y FAS (Sólidos)
+                                    const iconClass = item.icon.includes('fab') ? item.icon : 'fas ' + item.icon;
 
                                     return `
                                     <li class="menu-item hidden" data-roles="${rolesAttr}"> 
                                         <a href="${item.href}" class="${classes}">
-                                            <i class="fas ${item.icon} w-6 text-center text-sm ${isActive ? 'text-soriano-red' : (isHighlight ? 'text-green-500' : 'text-gray-500 group-hover:text-white')}"></i>
+                                            <i class="${iconClass} w-6 text-center text-sm ${isActive ? 'text-soriano-red' : (isHighlight ? 'text-green-500' : 'text-gray-500 group-hover:text-white')}"></i>
                                             <span class="ml-3 font-medium text-sm">${item.label}</span>
                                         </a>
                                     </li>`;
@@ -165,6 +169,12 @@ export function initAdminLayout(activePageId) {
                         <i class="fas fa-address-book text-2xl text-soriano-gold"></i>
                         <span class="text-sm font-bold text-gray-300">Clientes</span>
                     </a>
+                    
+                    <a href="whatsapp.html" class="menu-item hidden bg-gray-900 p-4 rounded-xl flex-col items-center justify-center gap-2 border border-gray-800 hover:border-green-400 transition" data-roles="${routePermissions['whatsapp'].join(',')}">
+                        <i class="fab fa-whatsapp text-2xl text-green-500"></i>
+                        <span class="text-sm font-bold text-gray-300">WhatsApp</span>
+                    </a>
+
                     <a href="talleres.html" class="menu-item hidden bg-gray-900 p-4 rounded-xl flex-col items-center justify-center gap-2 border border-gray-800 hover:border-blue-400 transition" data-roles="${routePermissions['talleres'].join(',')}">
                         <i class="fas fa-industry text-2xl text-blue-400"></i>
                         <span class="text-sm font-bold text-gray-300">Talleres</span>
