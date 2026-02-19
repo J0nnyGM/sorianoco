@@ -6,13 +6,14 @@
     <title>Remisión Soriano</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Great+Vibes&display=swap" rel="stylesheet">
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;700&family=Inter:wght@300;400;600&display=swap');
         
         body { font-family: 'Inter', sans-serif; background: #e5e7eb; }
         .font-serif { font-family: 'Playfair Display', serif; }
+        .font-signature { font-family: 'Great Vibes', cursive; }
         
-        /* Estilos de Impresión */
         @media print {
             body { background: white; -webkit-print-color-adjust: exact; }
             .no-print { display: none !important; }
@@ -28,11 +29,11 @@
             <div class="flex justify-between items-start border-b-2 border-black pb-6 mb-8">
                 <div>
                     <img src="../assets/img/logo.jpg" alt="Soriano" class="h-20 w-auto mb-2 mix-blend-multiply">
-                    <p class="text-xs text-gray-500 uppercase tracking-widest">Alta Costura & Diseño</p>
+                    <p class="text-xs text-gray-500 uppercase tracking-widest">Alta Costura</p>
                 </div>
                 <div class="text-right">
                     <h1 class="text-3xl font-serif font-bold text-black mb-1">REMISIÓN DE ENTREGA</h1>
-                    <p class="text-lg text-red-700 font-bold" id="orderNumber">#ORD-0000</p>
+                    <p class="text-lg text-red-700 font-bold" id="orderNumber">Cargando...</p>
                     <p class="text-sm text-gray-500 mt-2" id="currentDate">Fecha: -</p>
                 </div>
             </div>
@@ -50,15 +51,14 @@
                 <div class="text-right">
                     <h3 class="text-xs font-bold text-gray-400 uppercase tracking-wide mb-2">De</h3>
                     <div class="text-sm text-gray-600 space-y-1">
-                        <p class="font-bold text-black">Soriano Alta Costura</p>
-                        <p>Calle Principal #123</p>
+                        <p class="font-bold text-black">Soriano Men & Kid's</p>
                         <p>Bogotá, Colombia</p>
-                        <p>contacto@soriano.com</p>
+                        <p>318 7044608 - 313 8093737</p>
                     </div>
                 </div>
             </div>
 
-            <div class="mb-12">
+            <div class="mb-6">
                 <table class="w-full text-left border-collapse">
                     <thead>
                         <tr class="border-b border-black text-xs uppercase font-bold text-gray-500">
@@ -67,45 +67,72 @@
                             <th class="py-3 text-right">Valor Total</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        <tr class="border-b border-gray-200">
-                            <td class="py-4">
-                                <p class="font-bold text-gray-800 text-lg" id="garmentType">...</p>
-                                <p class="text-sm text-gray-500 mt-1">Confección a medida según especificaciones.</p>
-                            </td>
-                            <td class="py-4 text-right">1</td>
-                            <td class="py-4 text-right font-medium" id="orderPrice">$-</td>
-                        </tr>
+                    <tbody id="itemsBody">
+                        <tr><td colspan="3" class="py-4 text-center text-gray-400 italic">Cargando detalles...</td></tr>
                     </tbody>
-                    <tfoot>
-                        <tr>
-                            <td colspan="2" class="pt-4 text-right font-bold text-gray-500 uppercase text-xs">Total a Pagar</td>
-                            <td class="pt-4 text-right font-bold text-2xl text-black" id="totalPrice">$-</td>
-                        </tr>
-                    </tfoot>
+                    <tfoot id="totalsFooter"></tfoot>
                 </table>
+            </div>
+
+            <div id="warrantySection" class="mb-8 text-[10px] text-gray-600 text-justify leading-snug space-y-3">
+                
+                <div id="warrantyCustom" class="hidden p-2 bg-gray-50 border-l-4 border-gray-400">
+                    <p class="font-bold uppercase text-gray-800 mb-1">Garantía Prendas Sobre Medida:</p>
+                    <p>La garantía no cubre cambios por talla, gusto personal o variaciones físicas posteriores a la entrega. Se realizarán ajustes únicamente si el error es atribuible al proceso de confección y no a cambios en las medidas suministradas.</p>
+                </div>
+
+                <div id="warrantyFinished" class="hidden p-2 bg-gray-50 border-l-4 border-black">
+                    <p class="font-bold uppercase text-gray-800 mb-1">Garantía Productos Terminados (4 Meses):</p>
+                    <p>Cubre defectos de confección (costuras, botones, forros, cierres). <strong>Requisito:</strong> Presentar factura.</p>
+                    <p class="mt-1"><span class="font-bold">EXCLUSIONES:</span> Desgaste natural, lavado inadecuado (químicos/secadora), manchas, humedad o arreglos realizados por terceros.</p>
+                </div>
+
             </div>
             
             <div class="mb-8 p-4 bg-gray-50 rounded border border-gray-100">
                 <h4 class="text-xs font-bold text-gray-400 uppercase mb-2">Observaciones / Estado</h4>
-                <p class="text-sm text-gray-600" id="orderNotes">Prenda entregada en perfectas condiciones tras prueba final.</p>
+                <p class="text-sm text-gray-600" id="orderNotes">...</p>
             </div>
         </div>
 
         <div class="mt-auto">
-            <div class="grid grid-cols-2 gap-12 mt-12 mb-8">
-                <div class="text-center">
-                    <div class="border-b border-gray-300 h-16 mb-2"></div>
-                    <p class="text-xs text-gray-500 uppercase">Firma Recibido (Cliente)</p>
+            <div class="grid grid-cols-2 gap-12 mt-12 mb-8 items-end">
+                <div class="text-center pb-2">
+                    <div class="p-3 border border-dashed border-gray-300 rounded bg-gray-50">
+                        <i class="fab fa-whatsapp text-green-600 text-xl mb-1"></i>
+                        <p class="text-[10px] text-gray-500 italic leading-tight">
+                            Este documento fue enviado digitalmente al cliente vía WhatsApp para su conocimiento y fines pertinentes.
+                        </p>
+                    </div>
                 </div>
-                <div class="text-center">
+                
+                <div class="text-center relative">
+                    <p id="authSignature" class="font-signature text-4xl text-black absolute bottom-4 left-0 right-0 mx-auto transform -rotate-2">
+                        Soriano
+                    </p>
                     <div class="border-b border-gray-300 h-16 mb-2"></div>
-                    <p class="text-xs text-gray-500 uppercase">Firma Autorizado (Soriano)</p>
+                    <p class="text-xs text-gray-500 uppercase">Firma Autorizado</p>
                 </div>
             </div>
-            <p class="text-center text-[10px] text-gray-400">
+            
+            <p class="text-center text-[10px] text-gray-400 mb-6">
                 Este documento constituye constancia de entrega a satisfacción. Gracias por su preferencia.
             </p>
+
+            <div class="flex justify-center items-center gap-6 pt-4 border-t border-gray-100">
+                <a href="https://www.instagram.com/soriano.men/" target="_blank" class="flex items-center gap-2 text-xs text-gray-500 hover:text-black transition no-underline">
+                    <i class="fab fa-instagram text-lg"></i>
+                    <span class="font-medium">@soriano.men</span>
+                </a>
+                <a href="https://www.facebook.com/SorianoMen/" target="_blank" class="flex items-center gap-2 text-xs text-gray-500 hover:text-black transition no-underline">
+                    <i class="fab fa-facebook text-lg"></i>
+                    <span class="font-medium">Soriano Men</span>
+                </a>
+                <a href="https://www.tiktok.com/@juliansoriano36" target="_blank" class="flex items-center gap-2 text-xs text-gray-500 hover:text-black transition no-underline">
+                    <i class="fab fa-tiktok text-lg"></i>
+                    <span class="font-medium">@juliansoriano36</span>
+                </a>
+            </div>
         </div>
 
     </div>

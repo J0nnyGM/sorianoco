@@ -7,39 +7,63 @@
     <link href="../css/styles.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="icon" href="data:,">
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #18181b; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
+    </style>
 </head>
 <body class="bg-soriano-dark text-gray-300 font-sans antialiased">
 
     <div id="app-layout" class="flex h-screen overflow-hidden">
-        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-soriano-dark p-6 md:p-12 w-full">
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-soriano-dark p-6 md:p-12 w-full flex flex-col">
             
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <div class="flex flex-col md:flex-row justify-between items-end mb-8 gap-6">
                 <div>
-                    <h1 class="text-3xl font-serif text-white mb-1">Proveedores</h1>
-                    <p class="text-gray-500 text-sm">Directorio de suministros y servicios externos.</p>
+                    <h1 class="text-3xl font-serif text-white mb-2 flex items-center gap-3">
+                        <span class="bg-blue-900/30 text-blue-400 border border-blue-900 w-10 h-10 rounded-lg flex items-center justify-center text-lg shadow-lg">
+                            <i class="fas fa-truck-loading"></i>
+                        </span>
+                        Proveedores & Talleres
+                    </h1>
+                    <p class="text-gray-500 text-sm ml-14 max-w-md">Directorio de suministros, insumos y servicios satélite.</p>
                 </div>
-                <button onclick="openModal()" class="btn-primary flex items-center shadow-lg shadow-red-900/20">
-                    <i class="fas fa-plus mr-2"></i> Registrar Proveedor
+
+                <div class="flex gap-4">
+                    <div class="bg-[#121214] border border-gray-800 rounded-xl px-5 py-3 shadow-lg flex flex-col items-end">
+                        <span class="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Total Registros</span>
+                        <span class="text-2xl font-mono text-white font-bold" id="kpiTotal">0</span>
+                    </div>
+                    <div class="bg-[#121214] border border-gray-800 rounded-xl px-5 py-3 shadow-lg flex flex-col items-end">
+                        <span class="text-[10px] text-gray-500 uppercase font-bold tracking-widest">Talleres Activos</span>
+                        <span class="text-xl font-mono text-soriano-gold" id="kpiTalleres">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="flex justify-between items-center mb-6">
+                <div class="relative w-64">
+                    <i class="fas fa-search absolute left-4 top-3 text-gray-500"></i>
+                    <input type="text" id="mainSearch" placeholder="Buscar empresa o NIT..." class="w-full bg-[#121214] border border-gray-800 rounded-full py-2.5 pl-10 pr-4 text-sm text-white focus:border-white outline-none transition placeholder-gray-600 shadow-sm">
+                </div>
+                <button onclick="openModal()" class="btn-primary flex items-center shadow-lg shadow-blue-900/20 px-6 py-2.5 rounded-full text-sm font-bold bg-white text-black hover:bg-gray-200 transition">
+                    <i class="fas fa-plus mr-2 text-blue-600"></i> Nuevo Proveedor
                 </button>
             </div>
 
-            <div class="bg-black/40 border border-gray-800 rounded-lg overflow-hidden shadow-xl">
-                <div class="overflow-x-auto">
+            <div class="bg-[#121214] border border-gray-800 rounded-2xl overflow-hidden shadow-2xl flex-1 flex flex-col min-h-0 relative">
+                <div class="overflow-x-auto flex-1 custom-scrollbar z-10">
                     <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="border-b border-gray-800 text-xs uppercase text-gray-500 bg-gray-900/50">
-                                <th class="px-6 py-4 font-medium tracking-wider">Empresa / Razón Social</th>
-                                <th class="px-6 py-4 font-medium tracking-wider">Contacto Comercial</th>
-                                <th class="px-6 py-4 font-medium tracking-wider">Categoría</th>
-                                <th class="px-6 py-4 font-medium tracking-wider text-right">Acciones</th>
+                        <thead class="bg-[#18181b] text-xs uppercase text-gray-500 sticky top-0 z-20 shadow-sm border-b border-gray-800">
+                            <tr>
+                                <th class="px-6 py-4 font-bold tracking-wider">Empresa / Razón Social</th>
+                                <th class="px-6 py-4 font-bold tracking-wider">Contacto Comercial</th>
+                                <th class="px-6 py-4 font-bold tracking-wider">Categoría</th>
+                                <th class="px-6 py-4 font-bold tracking-wider text-right">Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="suppliersTableBody" class="divide-y divide-gray-800 text-sm">
-                            <tr>
-                                <td colspan="4" class="px-6 py-8 text-center text-gray-500">
-                                    <i class="fas fa-circle-notch fa-spin mr-2"></i> Cargando...
-                                </td>
-                            </tr>
+                            <tr><td colspan="4" class="p-12 text-center text-gray-500 italic"><i class="fas fa-circle-notch fa-spin mr-2"></i> Cargando...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -47,64 +71,99 @@
         </main>
     </div>
 
-    <div id="supplierModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 backdrop-blur-sm p-4">
-        <div class="bg-gray-900 border border-gray-700 rounded-lg max-w-lg w-full shadow-2xl">
+    <div id="supplierModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-50 backdrop-blur-sm p-4">
+        <div class="bg-[#121214] border border-gray-700 rounded-2xl w-full max-w-2xl shadow-2xl relative flex flex-col max-h-[95vh]">
             
-            <div class="p-6 border-b border-gray-800 flex justify-between items-center">
-                <h3 class="text-xl font-serif text-white" id="modalTitle">Nuevo Proveedor</h3>
-                <button onclick="closeModal()" class="text-gray-400 hover:text-white transition"><i class="fas fa-times"></i></button>
+            <div class="px-6 py-5 border-b border-gray-800 bg-[#18181b] rounded-t-2xl flex justify-between items-center">
+                <h3 class="text-xl font-serif text-white flex items-center gap-2"><i class="fas fa-building text-soriano-gold"></i> <span id="modalTitle">Nuevo Proveedor</span></h3>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white hover:bg-red-900/50 w-8 h-8 rounded-full flex items-center justify-center transition"><i class="fas fa-times"></i></button>
             </div>
 
-            <form id="supplierForm" class="p-6 space-y-4">
+            <form id="supplierForm" class="p-6 space-y-6 overflow-y-auto custom-scrollbar">
                 <input type="hidden" id="supplierId">
+                <input type="hidden" id="currentQrUrl">
 
                 <div>
-                    <label class="block text-xs text-gray-400 mb-1 uppercase">Nombre Empresa</label>
-                    <input type="text" id="companyName" required class="input-soriano" placeholder="Ej. Textiles Lafayette">
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs text-gray-400 mb-1 uppercase">NIT / RUT</label>
-                        <input type="text" id="companyNit" class="input-soriano" placeholder="900.123.456">
-                    </div>
-                    <div>
-                        <label class="block text-xs text-gray-400 mb-1 uppercase">Categoría</label>
-                        <select id="category" class="input-soriano appearance-none">
-                            <option value="telas">Telas e Insumos</option>
-                            <option value="maquinaria">Maquinaria</option>
-                            <option value="servicios">Servicios (Luz/Agua)</option>
-                            <option value="taller">Taller Externo</option>
-                        </select>
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-xs text-gray-400 mb-1 uppercase">Nombre Contacto</label>
-                    <input type="text" id="contactName" class="input-soriano" placeholder="Ej. Pedro Pérez (Vendedor)">
-                </div>
-
-                <div class="grid grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs text-gray-400 mb-1 uppercase">Teléfono</label>
-                        <input type="tel" id="contactPhone" required class="input-soriano" placeholder="+57 ...">
-                    </div>
-                    <div>
-                        <label class="block text-xs text-gray-400 mb-1 uppercase">Email</label>
-                        <input type="email" id="contactEmail" class="input-soriano" placeholder="ventas@empresa.com">
+                    <h4 class="text-xs font-bold text-soriano-gold uppercase tracking-widest border-b border-gray-800 pb-2 mb-4">Datos Generales</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] text-gray-400 mb-1.5 uppercase font-bold tracking-wider">Nombre Empresa</label>
+                            <input type="text" id="companyName" required class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:border-soriano-gold outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-400 mb-1.5 uppercase font-bold tracking-wider">NIT / RUT</label>
+                            <input type="text" id="companyNit" class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:border-soriano-gold outline-none font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-400 mb-1.5 uppercase font-bold tracking-wider">Categoría</label>
+                            <select id="category" class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:border-soriano-gold outline-none">
+                                <option value="telas">Telas e Insumos</option>
+                                <option value="taller">Taller Externo (Satélite)</option>
+                                <option value="maquinaria">Maquinaria y Mant.</option>
+                                <option value="otro">Otro</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-400 mb-1.5 uppercase font-bold tracking-wider">Nombre Contacto</label>
+                            <input type="text" id="contactName" class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:border-soriano-gold outline-none">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-400 mb-1.5 uppercase font-bold tracking-wider">Teléfono</label>
+                            <input type="tel" id="contactPhone" required class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:border-soriano-gold outline-none font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-400 mb-1.5 uppercase font-bold tracking-wider">Dirección</label>
+                            <input type="text" id="address" class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:border-soriano-gold outline-none">
+                        </div>
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-xs text-gray-400 mb-1 uppercase">Dirección / Ubicación</label>
-                    <input type="text" id="address" class="input-soriano" placeholder="Calle...">
-                </div>
-
-                <div class="pt-4 flex justify-end space-x-3">
-                    <button type="button" onclick="closeModal()" class="px-4 py-2 text-gray-400 hover:text-white text-sm">Cancelar</button>
-                    <button type="submit" class="btn-primary">Guardar</button>
+                    <h4 class="text-xs font-bold text-blue-400 uppercase tracking-widest border-b border-gray-800 pb-2 mb-4 mt-2">Datos Bancarios para Pagos</h4>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-[10px] text-gray-400 mb-1.5 uppercase font-bold tracking-wider">Banco</label>
+                            <input type="text" id="bankName" class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:border-blue-500 outline-none" placeholder="Ej. Bancolombia">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-400 mb-1.5 uppercase font-bold tracking-wider">Tipo de Cuenta</label>
+                            <select id="accountType" class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:border-blue-500 outline-none">
+                                <option value="Ahorros">Ahorros</option>
+                                <option value="Corriente">Corriente</option>
+                                <option value="Nequi">Nequi</option>
+                                <option value="Daviplata">Daviplata</option>
+                                <option value="Efectivo">Efectivo / Caja</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-400 mb-1.5 uppercase font-bold tracking-wider">Número de Cuenta</label>
+                            <input type="text" id="accountNumber" class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:border-blue-500 outline-none font-mono">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] text-gray-400 mb-1.5 uppercase font-bold tracking-wider">Llave / ID / Cédula</label>
+                            <input type="text" id="accountKey" class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:border-blue-500 outline-none font-mono" placeholder="Si aplica">
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 bg-gray-900/50 p-3 rounded-lg border border-gray-800">
+                        <label class="block text-[10px] text-gray-400 mb-2 uppercase font-bold tracking-wider">Código QR de Pago</label>
+                        <div class="flex items-center space-x-4">
+                            <div class="w-16 h-16 bg-[#0f0f10] rounded flex items-center justify-center overflow-hidden border border-gray-700">
+                                <img id="qrPreview" src="" class="w-full h-full object-cover hidden">
+                                <i id="qrIcon" class="fas fa-qrcode text-2xl text-gray-600"></i>
+                            </div>
+                            <input type="file" id="qrInput" accept="image/*" class="text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-gray-800 file:text-white hover:file:bg-gray-700 cursor-pointer">
+                        </div>
+                    </div>
                 </div>
             </form>
+
+            <div class="p-5 border-t border-gray-800 bg-[#18181b] rounded-b-2xl flex justify-end gap-3">
+                <button type="button" onclick="closeModal()" class="px-6 py-2.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 text-sm font-medium transition">Cancelar</button>
+                <button id="saveBtn" onclick="document.getElementById('supplierForm').requestSubmit()" class="btn-primary shadow-lg shadow-soriano-gold/20 px-8 py-2.5 rounded-lg text-sm font-bold flex items-center bg-soriano-gold text-black hover:bg-yellow-400">
+                    Guardar
+                </button>
+            </div>
         </div>
     </div>
 

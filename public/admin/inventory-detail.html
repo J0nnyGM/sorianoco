@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Soriano | Detalle de Producto</title>
+    <title>Soriano | Ficha de Ítem</title>
     <link href="../css/styles.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="icon" href="data:,">
@@ -11,98 +11,134 @@
 <body class="bg-soriano-dark text-gray-300 font-sans antialiased">
 
     <div id="app-layout" class="flex h-screen overflow-hidden">
-        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-soriano-dark p-6 md:p-12 w-full">
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-soriano-dark p-6 md:p-12 w-full flex flex-col">
             
-            <a href="inventario.html" class="inline-flex items-center text-gray-500 hover:text-white mb-6 transition">
-                <i class="fas fa-arrow-left mr-2"></i> Volver al Inventario
-            </a>
+            <div class="flex justify-between items-center mb-6">
+                <a href="inventario.html" class="inline-flex items-center text-gray-500 hover:text-white transition group">
+                    <div class="w-8 h-8 rounded-full bg-gray-900 border border-gray-700 flex items-center justify-center mr-2 group-hover:border-white group-hover:bg-gray-800 transition">
+                        <i class="fas fa-arrow-left text-xs"></i>
+                    </div>
+                    <span class="text-sm font-medium">Volver al Inventario</span>
+                </a>
 
-            <div class="bg-black/40 border border-gray-800 rounded-lg p-6 mb-8 shadow-xl relative overflow-hidden">
-                <div class="flex flex-col md:flex-row gap-6 items-start">
+            </div>
+
+            <div class="bg-[#121214] border border-gray-800 rounded-2xl p-6 md:p-8 mb-8 shadow-2xl relative overflow-hidden">
+                <div class="absolute top-0 right-0 w-64 h-64 bg-gradient-to-br from-soriano-red/5 to-transparent rounded-bl-full pointer-events-none"></div>
+
+                <div class="flex flex-col md:flex-row gap-8 items-start relative z-10">
                     
-                    <div class="w-32 h-32 bg-gray-800 rounded-lg border border-gray-700 overflow-hidden flex-shrink-0">
-                        <img id="itemImage" src="" class="w-full h-full object-cover hidden">
-                        <div id="noImage" class="w-full h-full flex items-center justify-center text-gray-600 text-3xl">
-                            <i class="fas fa-box"></i>
+                    <div class="w-40 h-40 md:w-48 md:h-48 bg-black rounded-xl border border-gray-700 shadow-lg overflow-hidden flex-shrink-0 relative group">
+                        <img id="itemImage" src="" class="w-full h-full object-cover hidden transition transform group-hover:scale-105 duration-700">
+                        <div id="noImage" class="w-full h-full flex flex-col items-center justify-center text-gray-600 gap-2">
+                            <i class="fas fa-box-open text-4xl opacity-50"></i>
+                            <span class="text-[10px] uppercase tracking-widest font-bold">Sin Imagen</span>
                         </div>
                     </div>
 
-                    <div class="flex-1">
-                        <div class="flex justify-between items-start">
+                    <div class="flex-1 w-full">
+                        <div class="flex flex-col md:flex-row justify-between items-start gap-4 mb-6">
                             <div>
-                                <span id="itemBadge" class="px-2 py-1 text-[10px] uppercase font-bold rounded bg-gray-700 text-gray-300 mb-2 inline-block">...</span>
-                                <h1 class="text-3xl font-serif text-white mb-1" id="itemName">Cargando...</h1>
-                                <p class="text-gray-500 font-mono text-sm" id="itemSku">SKU: ...</p>
+                                <span id="itemBadge" class="px-2.5 py-1 text-[10px] uppercase font-bold rounded-full bg-gray-800 border border-gray-700 text-gray-400 mb-3 inline-block tracking-wider">Cargando...</span>
+                                <h1 class="text-3xl md:text-4xl font-serif text-white mb-2 leading-tight" id="itemName">...</h1>
+                                <div class="flex items-center gap-4 text-sm text-gray-500 font-mono">
+                                    <span id="itemSku" class="bg-gray-900 px-2 py-0.5 rounded border border-gray-800">SKU: ...</span>
+                                </div>
                             </div>
-                            <div class="text-right">
-                                <p class="text-xs text-gray-500 uppercase">Costo Unitario Actual</p>
-                                <p class="text-2xl font-serif text-soriano-gold" id="itemCost">$ 0</p>
+                            
+                            <div class="text-right bg-black/40 p-4 rounded-xl border border-gray-800 backdrop-blur-sm">
+                                <p class="text-[10px] text-gray-500 uppercase font-bold tracking-widest mb-1">Costo Promedio</p>
+                                <p class="text-3xl font-serif text-green-500" id="itemCost">$ 0</p>
                             </div>
                         </div>
 
-                        <div class="grid grid-cols-3 gap-4 mt-6 border-t border-gray-800 pt-4">
-                            <div>
-                                <p class="text-[10px] text-gray-500 uppercase mb-1">Stock Actual</p>
-                                <div id="itemStock" class="text-white font-bold min-h-[2rem] flex flex-col justify-center">
-                                    -
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-4 border-t border-gray-800 pt-6">
+                            
+                            <div class="bg-[#18181b] p-5 rounded-xl border border-gray-800 shadow-lg flex flex-col relative overflow-hidden group">
+                                <div class="absolute top-0 right-0 w-16 h-16 bg-blue-500/10 rounded-bl-full -mr-2 -mt-2 transition group-hover:bg-blue-500/20"></div>
+                                <div class="flex items-center gap-2 mb-3">
+                                    <div class="w-2 h-2 rounded-full bg-blue-500 shadow-[0_0_8px_rgba(59,130,246,0.5)]"></div>
+                                    <p class="text-[10px] text-gray-400 uppercase font-bold tracking-widest">Stock Actual</p>
+                                </div>
+                                <div id="itemStock" class="flex-1 flex flex-col justify-end">
+                                    <span class="text-gray-500 text-xs">Cargando...</span>
                                 </div>
                             </div>
-                            <div>
-                                <p class="text-[10px] text-gray-500 uppercase">Total Entradas (Compras)</p>
-                                <p class="text-xl text-green-500 font-bold" id="totalPurchased">-</p>
+
+                            <div class="bg-[#18181b] p-5 rounded-xl border border-gray-800 shadow-lg flex flex-col relative overflow-hidden group">
+                                <div class="absolute top-0 right-0 w-16 h-16 bg-green-500/10 rounded-bl-full -mr-2 -mt-2 transition group-hover:bg-green-500/20"></div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-2 h-2 rounded-full bg-green-500 shadow-[0_0_8px_rgba(34,197,94,0.5)]"></div>
+                                        <p class="text-[10px] text-gray-400 uppercase font-bold tracking-widest">Total Comprado</p>
+                                    </div>
+                                    <span class="text-2xl text-white font-mono font-bold" id="totalPurchased">-</span>
+                                </div>
+                                <div id="purchasedBreakdown" class="mt-2 pt-2 border-t border-gray-800/50 flex flex-wrap gap-1 text-[10px] text-gray-500 max-h-24 overflow-y-auto custom-scrollbar">
+                                    </div>
                             </div>
-                            <div>
-                                <p class="text-[10px] text-gray-500 uppercase">Total Salidas (Uso/Venta)</p>
-                                <p class="text-xl text-soriano-red font-bold" id="totalUsed">-</p>
+
+                            <div class="bg-[#18181b] p-5 rounded-xl border border-gray-800 shadow-lg flex flex-col relative overflow-hidden group">
+                                <div class="absolute top-0 right-0 w-16 h-16 bg-soriano-red/10 rounded-bl-full -mr-2 -mt-2 transition group-hover:bg-soriano-red/20"></div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <div class="flex items-center gap-2">
+                                        <div class="w-2 h-2 rounded-full bg-soriano-red shadow-[0_0_8px_rgba(206,32,41,0.5)]"></div>
+                                        <p class="text-[10px] text-gray-400 uppercase font-bold tracking-widest">Total Vendido</p>
+                                    </div>
+                                    <span class="text-2xl text-white font-mono font-bold" id="totalUsed">-</span>
+                                </div>
+                                <div id="usedBreakdown" class="mt-2 pt-2 border-t border-gray-800/50 flex flex-wrap gap-1 text-[10px] text-gray-500 max-h-24 overflow-y-auto custom-scrollbar">
+                                    </div>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 flex-1 min-h-0">
 
-                <div class="bg-black/40 border border-gray-800 rounded-lg overflow-hidden h-[500px] flex flex-col">
-                    <div class="p-4 border-b border-gray-800 bg-gray-900/50">
-                        <h3 class="font-serif text-white flex items-center">
-                            <i class="fas fa-truck text-green-500 mr-2"></i> Historial de Compras
+                <div class="bg-[#121214] border border-gray-800 rounded-xl overflow-hidden flex flex-col shadow-lg h-[500px]">
+                    <div class="px-6 py-4 border-b border-gray-800 bg-[#18181b] flex justify-between items-center">
+                        <h3 class="font-serif text-white text-lg flex items-center gap-2">
+                            <i class="fas fa-truck-loading text-green-500 text-sm"></i> Historial de Entradas
                         </h3>
                     </div>
-                    <div class="overflow-y-auto custom-scrollbar flex-1 p-4">
+                    <div class="overflow-y-auto custom-scrollbar flex-1">
                         <table class="w-full text-left text-sm">
-                                <thead>
-                                    <tr>
-                                        <th class="pb-2">Fecha</th>
-                                        <th class="pb-2">Proveedor</th>
-                                        <th class="pb-2 text-right">Cant.</th>
-                                        <th class="pb-2 text-right">Costo Unit.</th>
-                                        <th class="pb-2"></th> </tr>
-                                </thead>
+                            <thead class="bg-black/50 text-gray-500 uppercase text-[10px] font-bold tracking-wider sticky top-0 backdrop-blur-sm border-b border-gray-800">
+                                <tr>
+                                    <th class="px-6 py-3">Fecha</th>
+                                    <th class="px-6 py-3">Proveedor / Ref</th>
+                                    <th class="px-6 py-3 text-right">Cant.</th>
+                                    <th class="px-6 py-3 text-right">Costo Unit.</th>
+                                    <th class="px-6 py-3 w-10"></th> 
+                                </tr>
+                            </thead>
                             <tbody id="purchasesList" class="divide-y divide-gray-800 text-gray-400">
-                                <tr><td colspan="4" class="py-4 text-center text-xs">Cargando...</td></tr>
+                                <tr><td colspan="5" class="py-12 text-center text-xs text-gray-600 italic">Cargando datos...</td></tr>
                             </tbody>
                         </table>
                     </div>
                 </div>
 
-                <div class="bg-black/40 border border-gray-800 rounded-lg overflow-hidden h-[500px] flex flex-col">
-                    <div class="p-4 border-b border-gray-800 bg-gray-900/50">
-                        <h3 class="font-serif text-white flex items-center">
-                            <i class="fas fa-cut text-soriano-red mr-2"></i> Uso en Órdenes / Ventas
+                <div class="bg-[#121214] border border-gray-800 rounded-xl overflow-hidden flex flex-col shadow-lg h-[500px]">
+                    <div class="px-6 py-4 border-b border-gray-800 bg-[#18181b] flex justify-between items-center">
+                        <h3 class="font-serif text-white text-lg flex items-center gap-2">
+                            <i class="fas fa-dolly text-soriano-red text-sm"></i> Salidas / Ventas
                         </h3>
                     </div>
-                    <div class="overflow-y-auto custom-scrollbar flex-1 p-4">
+                    <div class="overflow-y-auto custom-scrollbar flex-1">
                         <table class="w-full text-left text-sm">
-                            <thead class="text-xs text-gray-500 uppercase border-b border-gray-800">
+                            <thead class="bg-black/50 text-gray-500 uppercase text-[10px] font-bold tracking-wider sticky top-0 backdrop-blur-sm border-b border-gray-800">
                                 <tr>
-                                    <th class="pb-2">Fecha</th>
-                                    <th class="pb-2">Orden / Cliente</th>
-                                    <th class="pb-2 text-right">Usado</th>
-                                    <th class="pb-2 text-right">Estado</th>
+                                    <th class="px-6 py-3">Fecha</th>
+                                    <th class="px-6 py-3">Destino (Orden)</th>
+                                    <th class="px-6 py-3 text-right">Cantidad</th>
+                                    <th class="px-6 py-3 text-right">Estado</th>
                                 </tr>
                             </thead>
                             <tbody id="usageList" class="divide-y divide-gray-800 text-gray-400">
-                                <tr><td colspan="4" class="py-4 text-center text-xs">Cargando...</td></tr>
+                                <tr><td colspan="4" class="py-12 text-center text-xs text-gray-600 italic">Cargando datos...</td></tr>
                             </tbody>
                         </table>
                     </div>
@@ -110,58 +146,49 @@
 
             </div>
 
-            <div id="detailModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-[60] backdrop-blur-sm p-4 overflow-y-auto">
-                <div class="bg-gray-900 border border-gray-700 rounded-lg max-w-2xl w-full shadow-2xl my-8">
-                    
-                    <div class="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-900">
-                        <div>
-                            <h3 class="text-xl font-serif text-white">Resumen de Factura</h3>
-                            <p class="text-xs text-gray-500" id="detailRef">REF: ...</p>
-                        </div>
-                        <button onclick="document.getElementById('detailModal').classList.add('hidden'); document.getElementById('detailModal').classList.remove('flex');" class="text-gray-400 hover:text-white transition"><i class="fas fa-times"></i></button>
-                    </div>
+        </main>
+    </div>
 
-                    <div class="p-6 space-y-6">
-                        
-                        <div class="grid grid-cols-2 gap-4 text-sm border-b border-gray-800 pb-4">
-                            <div>
-                                <p class="text-xs text-gray-500 uppercase">Proveedor</p>
-                                <p class="text-white font-bold text-lg" id="detailSupplier">...</p>
-                            </div>
-                            <div class="text-right">
-                                <p class="text-xs text-gray-500 uppercase">Fecha</p>
-                                <p class="text-white font-mono" id="detailDate">...</p>
-                            </div>
-                        </div>
-
-                        <div class="border border-gray-800 rounded overflow-hidden">
-                            <table class="w-full text-left text-sm">
-                                    <thead class="bg-gray-900/50 text-gray-500 uppercase text-xs">
-                                        <tr>
-                                            <th class="p-3 w-16">Img</th> <th class="p-3">Material / Producto</th>
-                                            <th class="p-3">Detalle (Tallas/Cant)</th>
-                                            <th class="p-3 text-right">Subtotal</th>
-                                        </tr>
-                                    </thead>
-                                <tbody id="detailItemsBody" class="divide-y divide-gray-800 bg-black/20 text-gray-300">
-                                    </tbody>
-                                <tfoot class="bg-gray-900 font-bold text-white">
-                                    <tr>
-                                        <td colspan="2" class="p-3 text-right uppercase text-xs text-gray-400">Total Pagado</td>
-                                        <td class="p-3 text-right text-soriano-gold text-lg" id="detailTotal">$0</td>
-                                    </tr>
-                                </tfoot>
-                            </table>
-                        </div>
-
-                        <div class="pt-2 flex justify-end">
-                            <button onclick="document.getElementById('detailModal').classList.add('hidden'); document.getElementById('detailModal').classList.remove('flex');" class="btn-outline text-xs">Cerrar</button>
-                        </div>
-                    </div>
+    <div id="detailModal" class="fixed inset-0 bg-black/95 hidden items-center justify-center z-[70] backdrop-blur-sm p-4">
+        <div class="bg-[#121214] border border-gray-700 rounded-2xl w-full max-w-2xl shadow-2xl relative flex flex-col max-h-[85vh]">
+            
+            <div class="px-6 py-5 border-b border-gray-800 bg-[#18181b] rounded-t-2xl flex justify-between items-start">
+                <div>
+                    <p class="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-1">Detalle de Compra</p>
+                    <h3 class="text-xl font-serif text-white" id="detailSupplier">...</h3>
+                    <p class="text-xs text-green-400 font-mono mt-1" id="detailRef">REF: ...</p>
+                </div>
+                <div class="text-right">
+                    <p class="text-[10px] uppercase tracking-widest text-gray-500 font-bold mb-1">Fecha</p>
+                    <p class="text-sm text-white font-mono bg-gray-800 px-2 py-1 rounded" id="detailDate">...</p>
                 </div>
             </div>
 
-        </main>
+            <div class="overflow-y-auto custom-scrollbar p-0 flex-1">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-black/40 text-gray-500 uppercase text-[10px] font-bold border-b border-gray-800 sticky top-0 backdrop-blur-md">
+                        <tr>
+                            <th class="px-6 py-3 w-16">Img</th>
+                            <th class="px-6 py-3">Ítem / Material</th>
+                            <th class="px-6 py-3">Detalle</th>
+                            <th class="px-6 py-3 text-right">Subtotal</th>
+                        </tr>
+                    </thead>
+                    <tbody id="detailItemsBody" class="divide-y divide-gray-800 text-gray-300">
+                        </tbody>
+                </table>
+            </div>
+
+            <div class="px-6 py-4 bg-[#18181b] border-t border-gray-800 rounded-b-2xl flex justify-between items-center">
+                <button onclick="document.getElementById('detailModal').classList.add('hidden'); document.getElementById('detailModal').classList.remove('flex');" class="text-sm text-gray-400 hover:text-white transition">
+                    Cerrar
+                </button>
+                <div class="text-right">
+                    <span class="text-xs text-gray-500 uppercase font-bold mr-3">Total Factura</span>
+                    <span class="text-xl font-serif text-soriano-gold" id="detailTotal">$0</span>
+                </div>
+            </div>
+        </div>
     </div>
 
     <script type="module">

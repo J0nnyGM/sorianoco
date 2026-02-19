@@ -3,175 +3,172 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Soriano | Gastos</title>
+    <title>Soriano | Gastos & Egresos</title>
     <link href="../css/styles.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="icon" href="data:,">
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #18181b; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
+    </style>
 </head>
 <body class="bg-soriano-dark text-gray-300 font-sans antialiased">
 
     <div id="app-layout" class="flex h-screen overflow-hidden">
-        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-soriano-dark p-6 md:p-12 w-full">
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-soriano-dark p-6 md:p-12 w-full flex flex-col">
             
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <div class="flex flex-col md:flex-row justify-between items-end mb-8 gap-6">
                 <div>
-                    <h1 class="text-3xl font-serif text-white mb-1">Gastos Operativos</h1>
-                    <p class="text-gray-500 text-sm">Control mensual optimizado.</p>
+                    <h1 class="text-3xl font-serif text-white mb-2 flex items-center gap-3">
+                        <span class="bg-red-900/30 text-red-400 border border-red-900 w-10 h-10 rounded-lg flex items-center justify-center text-lg shadow-lg">
+                            <i class="fas fa-hand-holding-usd"></i>
+                        </span>
+                        Gastos & Egresos
+                    </h1>
+                    <p class="text-gray-500 text-sm ml-14 max-w-md">Control de salidas de dinero, pagos y devoluciones.</p>
                 </div>
-                
-                <div class="flex flex-col md:flex-row items-end md:items-center gap-4">
-                    
-                    <div class="flex items-center bg-gray-800 rounded-lg p-1 border border-gray-700">
-                        <span class="text-xs text-gray-400 px-3 uppercase">Período:</span>
-                        <input type="month" id="monthFilter" class="bg-transparent text-white text-sm border-0 focus:ring-0 cursor-pointer py-2">
-                    </div>
 
-                    <div class="bg-red-900/20 border border-red-900/30 px-4 py-2 rounded-lg text-right">
-                        <p class="text-[10px] text-red-400 uppercase tracking-wide">Total Mes</p>
-                        <p class="text-xl font-serif text-white" id="monthTotalDisplay">---</p>
-                    </div>
-
-                    <div class="flex space-x-2">
-                        <button onclick="openAuditModal()" class="btn-outline text-xs px-3 py-2 text-gray-400 border-gray-700 hover:text-white hover:border-gray-500" title="Ver Papelera / Auditoría">
-                            <i class="fas fa-history"></i>
-                        </button>
-                        <button onclick="openModal()" class="btn-primary flex items-center shadow-lg shadow-red-900/20 px-4 py-2 text-sm">
-                            <i class="fas fa-plus mr-2"></i> Nuevo
-                        </button>
+                <div class="flex gap-4">
+                    <div class="bg-[#121214] border border-gray-800 rounded-xl px-5 py-3 shadow-lg flex flex-col items-end relative overflow-hidden">
+                        <div class="absolute right-[-10px] top-[-10px] text-red-500/10 text-6xl"><i class="fas fa-chart-line"></i></div>
+                        <span class="text-[10px] text-gray-500 uppercase font-bold tracking-widest relative z-10">Total Filtrado</span>
+                        <span class="text-2xl font-mono text-red-400 font-bold relative z-10" id="monthTotalDisplay">$0</span>
                     </div>
                 </div>
             </div>
 
-            <div id="auditModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-[60] backdrop-blur-sm p-4 overflow-y-auto">
-                <div class="bg-gray-900 border border-gray-700 rounded-lg max-w-4xl w-full shadow-2xl my-8 h-[80vh] flex flex-col">
-                    <div class="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-900">
-                        <div>
-                            <h3 class="text-xl font-serif text-white">Bitácora de Eliminados</h3>
-                            <p class="text-xs text-gray-500">Historial de seguridad y reversos</p>
-                        </div>
-                        <button onclick="document.getElementById('auditModal').classList.add('hidden'); document.getElementById('auditModal').classList.remove('flex');" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
+            <div class="flex flex-col md:flex-row justify-between items-center mb-6 gap-4 border-b border-gray-800 pb-4">
+                <div class="flex items-center gap-3 w-full md:w-auto">
+                    <div class="bg-[#121214] border border-gray-800 rounded-lg flex items-center px-3 shadow-sm">
+                        <i class="fas fa-calendar-alt text-gray-500 text-sm"></i>
+                        <input type="month" id="monthFilter" class="bg-transparent text-white text-sm py-2.5 pl-3 outline-none border-none cursor-pointer" style="color-scheme: dark;">
                     </div>
-                    
-                    <div class="flex-1 overflow-y-auto p-0 custom-scrollbar">
-                        <table class="w-full text-left text-sm">
-                            <thead class="bg-gray-900 text-gray-500 uppercase text-xs sticky top-0 z-10">
-                                <tr>
-                                    <th class="p-4 bg-gray-900">Fecha Eliminación</th>
-                                    <th class="p-4 bg-gray-900">Gasto Original</th>
-                                    <th class="p-4 bg-gray-900">Motivo / Usuario</th>
-                                    <th class="p-4 bg-gray-900 text-right">Monto Reversado</th>
-                                </tr>
-                            </thead>
-                            <tbody id="auditTableBody" class="divide-y divide-gray-800 text-gray-400">
-                                </tbody>
-                        </table>
-                    </div>
+                    <button onclick="window.openAuditModal()" class="text-xs text-gray-400 hover:text-white bg-[#121214] border border-gray-800 hover:bg-gray-800 px-4 py-3 rounded-lg transition font-bold tracking-wider shadow-sm">
+                        <i class="fas fa-history mr-2"></i> Papelera
+                    </button>
                 </div>
+
+                <button onclick="openModal()" class="btn-primary flex items-center shadow-lg shadow-red-900/20 px-6 py-2.5 rounded-full text-sm font-bold bg-white text-black hover:bg-gray-200 transition">
+                    <i class="fas fa-plus mr-2 text-red-600"></i> Registrar Gasto
+                </button>
             </div>
 
-            <div class="bg-black/40 border border-gray-800 rounded-lg overflow-hidden shadow-xl flex flex-col justify-between min-h-[500px]">
-                <div class="overflow-x-auto">
+            <div class="bg-[#121214] border border-gray-800 rounded-2xl overflow-hidden shadow-2xl flex-1 flex flex-col min-h-0">
+                <div class="overflow-x-auto flex-1 custom-scrollbar">
                     <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="border-b border-gray-800 text-xs uppercase text-gray-500 bg-gray-900/50">
-                                <th class="px-6 py-4">Fecha</th>
-                                <th class="px-6 py-4">Categoría</th>
-                                <th class="px-6 py-4">Descripción</th>
-                                <th class="px-6 py-4">Cuenta Origen</th>
-                                <th class="px-6 py-4 text-right">Monto</th>
-                                <th class="px-6 py-4 text-right">Acciones</th>
+                        <thead class="bg-[#18181b] text-xs uppercase text-gray-500 sticky top-0 z-20 shadow-sm border-b border-gray-800">
+                            <tr>
+                                <th class="px-6 py-4 font-bold tracking-wider">Fecha</th>
+                                <th class="px-6 py-4 font-bold tracking-wider">Categoría</th>
+                                <th class="px-6 py-4 font-bold tracking-wider">Descripción</th>
+                                <th class="px-6 py-4 font-bold tracking-wider">Cuenta Salida</th>
+                                <th class="px-6 py-4 font-bold tracking-wider text-right">Valor</th>
+                                <th class="px-6 py-4 font-bold tracking-wider text-right">Acciones</th>
                             </tr>
                         </thead>
                         <tbody id="expensesTableBody" class="divide-y divide-gray-800 text-sm">
-                            <tr><td colspan="6" class="p-8 text-center text-gray-500">Seleccione un mes para cargar.</td></tr>
+                            <tr><td colspan="6" class="p-12 text-center text-gray-500 italic"><i class="fas fa-circle-notch fa-spin mr-2"></i> Cargando...</td></tr>
                         </tbody>
                     </table>
                 </div>
-
-                <div class="bg-gray-900 border-t border-gray-800 p-4 flex justify-between items-center">
-                    <span class="text-xs text-gray-500" id="pageIndicator">Página 1</span>
+                <div class="bg-[#18181b] px-6 py-3 border-t border-gray-800 flex justify-between items-center">
+                    <span class="text-xs text-gray-500 font-bold" id="pageIndicator">Página 1</span>
                     <div class="flex space-x-2">
-                        <button id="prevPageBtn" class="px-3 py-1 bg-gray-800 border border-gray-700 rounded text-gray-400 text-xs hover:text-white disabled:opacity-50 disabled:cursor-not-allowed">
-                            <i class="fas fa-chevron-left mr-1"></i> Anterior
-                        </button>
-                        <button id="nextPageBtn" class="px-3 py-1 bg-gray-800 border border-gray-700 rounded text-gray-400 text-xs hover:text-white disabled:opacity-50 disabled:cursor-not-allowed">
-                            Siguiente <i class="fas fa-chevron-right ml-1"></i>
-                        </button>
+                        <button id="prevPageBtn" class="px-3 py-1.5 bg-[#121214] border border-gray-700 rounded text-gray-400 text-xs hover:text-white disabled:opacity-50 transition"><i class="fas fa-chevron-left mr-1"></i> Anterior</button>
+                        <button id="nextPageBtn" class="px-3 py-1.5 bg-[#121214] border border-gray-700 rounded text-gray-400 text-xs hover:text-white disabled:opacity-50 transition">Siguiente <i class="fas fa-chevron-right ml-1"></i></button>
                     </div>
                 </div>
             </div>
+
         </main>
     </div>
 
-    <div id="expenseModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-50 backdrop-blur-sm p-4 overflow-y-auto">
-        <div class="bg-gray-900 border border-gray-700 rounded-lg max-w-lg w-full shadow-2xl my-8">
-            
-            <div class="p-6 border-b border-gray-800 flex justify-between items-center">
+    <div id="expenseModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-50 backdrop-blur-sm p-4">
+        <div class="bg-[#121214] border border-gray-700 rounded-2xl max-w-lg w-full shadow-2xl relative">
+            <div class="px-6 py-5 border-b border-gray-800 bg-[#18181b] rounded-t-2xl flex justify-between items-center">
                 <h3 class="text-xl font-serif text-white" id="modalTitle">Nuevo Gasto</h3>
-                <button onclick="closeModal()" class="text-gray-400 hover:text-white transition"><i class="fas fa-times"></i></button>
+                <button onclick="closeModal()" class="text-gray-400 hover:text-white transition w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-800"><i class="fas fa-times"></i></button>
             </div>
-
-            <form id="expenseForm" class="p-6 space-y-4">
+            
+            <form id="expenseForm" class="p-6 space-y-5">
                 <input type="hidden" id="expenseId">
+                
+                <div id="editWarning" class="hidden bg-yellow-900/20 border border-yellow-900/50 p-3 rounded-lg flex items-start gap-3">
+                    <i class="fas fa-exclamation-triangle text-yellow-600 mt-0.5"></i>
+                    <p class="text-xs text-yellow-500">En modo edición solo puede actualizar fecha, categoría y descripción. Los valores financieros no se alteran. Para devolver el dinero, use el botón de "Anular" (Papelera) en la tabla.</p>
+                </div>
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs text-gray-400 mb-1 uppercase">Fecha</label>
-                        <input type="date" id="expenseDate" required class="input-soriano text-white">
+                        <label class="block text-[10px] text-gray-400 mb-1.5 uppercase font-bold tracking-wider">Fecha</label>
+                        <input type="date" id="expenseDate" required class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:border-soriano-gold outline-none transition" style="color-scheme: dark;">
                     </div>
                     <div>
-                        <label class="block text-xs text-gray-400 mb-1 uppercase">Categoría</label>
-                        <select id="expenseCategory" class="input-soriano appearance-none">
-                            <option value="nomina">Nómina / Salarios</option>
-                            <option value="arriendo">Arriendo Local</option>
-                            <option value="servicios">Servicios Públicos</option>
-                            <option value="taller_externo">Servicios Taller Externo</option>
-                            <option value="mantenimiento">Mantenimiento Máquinas</option>
-                            <option value="insumos">Insumos (No Inventario)</option>
-                            <option value="marketing">Publicidad</option>
-                            <option value="otros">Otros</option>
+                        <label class="block text-[10px] text-gray-400 mb-1.5 uppercase font-bold tracking-wider">Categoría</label>
+                        <select id="expenseCategory" required class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:border-soriano-gold outline-none transition">
+                            <option value="operativo">Operativo (Luz, Agua, etc)</option>
+                            <option value="nomina">Nómina</option>
+                            <option value="taller_externo">Taller Satélite</option>
+                            <option value="compra_inventario">Compra Material / Inventario</option>
+                            <option value="pago_proveedor">Pago a Proveedor (Deuda)</option>
+                            <option value="impuestos">Impuestos</option>
+                            <option value="otro">Otro</option>
                         </select>
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-xs text-gray-400 mb-1 uppercase">Descripción</label>
-                    <input type="text" id="expenseDesc" required class="input-soriano" placeholder="Ej. Pago recibo luz Enero">
+                    <label class="block text-[10px] text-gray-400 mb-1.5 uppercase font-bold tracking-wider">Concepto / Descripción</label>
+                    <input type="text" id="expenseDesc" required class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:border-soriano-gold outline-none transition" placeholder="Ej. Pago recibo Enel...">
                 </div>
 
-                <div class="bg-gray-800/30 p-4 rounded border border-gray-700">
-                    <label class="block text-xs text-gray-400 mb-2 uppercase font-bold text-soriano-gold">
-                        <i class="fas fa-wallet mr-1"></i> Método de Pago
-                    </label>
-                    
-                    <div class="mb-3">
-                        <label class="block text-[10px] text-gray-500 uppercase mb-1">Cuenta de Origen</label>
-                        <select id="expenseAccount" required class="input-soriano appearance-none border-red-900/50">
-                            <option value="">Seleccionar cuenta...</option>
-                            </select>
-                        <div id="accountBalanceDisplay" class="text-[10px] text-gray-400 mt-1 text-right min-h-[1rem]"></div>
-                    </div>
-
+                <div class="grid grid-cols-2 gap-4 items-start">
                     <div>
-                        <label class="block text-[10px] text-gray-500 uppercase mb-1">Monto del Gasto ($)</label>
-                        <input type="text" id="expenseAmount" required class="input-soriano text-xl font-bold text-white" placeholder="0" oninput="formatCurrencyInput(this)">
+                        <label class="block text-[10px] text-gray-400 mb-1.5 uppercase font-bold tracking-wider">Valor ($)</label>
+                        <input type="text" id="expenseAmount" required class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-2.5 text-xl font-bold text-red-400 font-mono focus:border-red-500 outline-none transition" placeholder="0" oninput="formatCurrencyInput(this)">
                     </div>
-
-                    <div id="taxPreview" class="hidden mt-2 bg-red-900/20 p-2 rounded border border-red-900/50 text-xs flex justify-between items-center">
-                        <span class="text-red-400"><i class="fas fa-info-circle mr-1"></i> + 4x1000 Bancario</span>
-                        <span class="text-white font-bold" id="taxAmountDisplay">-$0</span>
+                    <div>
+                        <label class="block text-[10px] text-gray-400 mb-1.5 uppercase font-bold tracking-wider">Cuenta de Salida</label>
+                        <select id="expenseAccount" class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-3 text-sm text-white focus:border-soriano-gold outline-none transition">
+                            <option value="">Seleccionar...</option>
+                        </select>
+                        <div id="accountBalanceDisplay" class="text-[9px] text-gray-500 mt-1 text-right min-h-[14px]"></div>
+                        <div id="taxPreview" class="hidden mt-2 bg-red-900/20 p-2 rounded border border-red-900/50 text-[10px] flex justify-between items-center">
+                            <span class="text-red-400 font-bold uppercase tracking-widest">4x1000</span>
+                            <span class="text-white font-mono" id="taxAmountDisplay">-$0</span>
+                        </div>
                     </div>
                 </div>
 
-                <div id="editWarning" class="hidden text-xs text-yellow-500 italic text-center">
-                    * Editando solo información. El movimiento de dinero ya fue registrado.
-                </div>
-
-                <div class="pt-4 flex justify-end space-x-3">
-                    <button type="button" onclick="closeModal()" class="px-4 py-2 text-gray-400 hover:text-white text-sm">Cancelar</button>
-                    <button type="submit" class="btn-primary">Registrar Pago</button>
+                <div class="pt-2 flex justify-end space-x-3">
+                    <button type="button" onclick="closeModal()" class="px-6 py-2.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 text-sm font-medium transition">Cancelar</button>
+                    <button type="submit" id="saveBtn" class="btn-primary shadow-lg shadow-red-900/20 px-8 py-2.5 rounded-lg text-sm font-bold flex items-center bg-white text-black hover:bg-gray-200">Registrar Gasto</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <div id="auditModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-[60] backdrop-blur-sm p-4 overflow-y-auto">
+        <div class="bg-[#121214] border border-gray-700 rounded-2xl max-w-4xl w-full shadow-2xl my-8 flex flex-col h-[80vh]">
+            <div class="p-6 border-b border-gray-800 bg-[#18181b] rounded-t-2xl flex justify-between items-center">
+                <h3 class="text-xl font-serif text-white flex items-center gap-2"><i class="fas fa-trash-restore text-gray-500"></i> Registro de Gastos Anulados</h3>
+                <button onclick="document.getElementById('auditModal').classList.add('hidden'); document.getElementById('auditModal').classList.remove('flex');" class="text-gray-400 hover:text-white w-8 h-8 flex items-center justify-center rounded-full hover:bg-gray-800 transition"><i class="fas fa-times"></i></button>
+            </div>
+            <div class="flex-1 overflow-y-auto p-0 custom-scrollbar">
+                <table class="w-full text-left text-sm">
+                    <thead class="bg-[#18181b] text-gray-500 uppercase text-[10px] sticky top-0 z-10 shadow-sm border-b border-gray-800">
+                        <tr>
+                            <th class="p-4 font-bold tracking-wider">Fecha / Usuario Anulación</th>
+                            <th class="p-4 font-bold tracking-wider">Gasto Original</th>
+                            <th class="p-4 font-bold tracking-wider">Motivo de Anulación</th>
+                            <th class="p-4 text-right font-bold tracking-wider">Valor Devuelto</th>
+                        </tr>
+                    </thead>
+                    <tbody id="auditTableBody" class="divide-y divide-gray-800 text-gray-300">
+                        </tbody>
+                </table>
+            </div>
         </div>
     </div>
 

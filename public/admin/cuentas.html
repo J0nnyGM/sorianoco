@@ -7,54 +7,67 @@
     <link href="../css/styles.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="icon" href="data:,">
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #18181b; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
+    </style>
 </head>
 <body class="bg-soriano-dark text-gray-300 font-sans antialiased">
 
     <div id="app-layout" class="flex h-screen overflow-hidden">
-        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-soriano-dark p-6 md:p-12 w-full">
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-soriano-dark p-6 md:p-12 w-full flex flex-col">
             
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <div class="flex flex-col md:flex-row justify-between items-end mb-8 gap-6">
                 <div>
-                    <h1 class="text-3xl font-serif text-white mb-1">Tesorería & Cuentas</h1>
-                    <p class="text-gray-500 text-sm">Gestión financiera, llaves y control de saldos.</p>
+                    <h1 class="text-3xl font-serif text-white mb-2 flex items-center gap-3">
+                        <span class="bg-green-900/30 text-green-400 border border-green-900 w-10 h-10 rounded-lg flex items-center justify-center text-lg shadow-lg">
+                            <i class="fas fa-wallet"></i>
+                        </span>
+                        Tesorería & Cuentas
+                    </h1>
+                    <p class="text-gray-500 text-sm ml-14 max-w-md">Gestión financiera, traslados de fondos y control de saldos.</p>
                 </div>
-                <div class="flex space-x-3">
-                    <button onclick="openTransferModal()" class="btn-outline flex items-center">
+                
+                <div class="flex space-x-3 w-full md:w-auto">
+                    <button onclick="openTransferModal()" class="flex-1 md:flex-none text-xs text-gray-400 hover:text-white bg-[#121214] border border-gray-800 hover:bg-gray-800 px-6 py-2.5 rounded-lg transition font-bold tracking-wider shadow-sm flex items-center justify-center">
                         <i class="fas fa-exchange-alt mr-2"></i> Transferir
                     </button>
-                    <button onclick="openModal()" class="btn-primary flex items-center shadow-lg shadow-red-900/20">
-                        <i class="fas fa-plus mr-2"></i> Nueva Cuenta
+                    <button onclick="openModal()" class="flex-1 md:flex-none btn-primary flex items-center justify-center shadow-lg shadow-green-900/20 px-6 py-2.5 rounded-lg text-sm font-bold bg-white text-black hover:bg-gray-200 transition">
+                        <i class="fas fa-plus mr-2 text-green-600"></i> Nueva Cuenta
                     </button>
                 </div>
             </div>
 
-            <div id="accountsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                <div class="col-span-full text-center py-10 text-gray-500">
-                    <i class="fas fa-circle-notch fa-spin mr-2"></i> Cargando saldos...
+            <div id="accountsGrid" class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+                <div class="col-span-full text-center py-12 text-gray-500 italic">
+                    <i class="fas fa-circle-notch fa-spin mr-2"></i> Cargando cuentas...
                 </div>
             </div>
+            
         </main>
     </div>
 
     <div id="accountModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-50 backdrop-blur-sm p-4 overflow-y-auto">
-        <div class="bg-gray-900 border border-gray-700 rounded-lg max-w-lg w-full shadow-2xl my-8">
-            <div class="p-6 border-b border-gray-800 flex justify-between items-center">
-                <h3 class="text-xl font-serif text-white" id="modalTitle">Gestión de Cuenta</h3>
-                <button onclick="closeModal()" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
+        <div class="bg-[#121214] border border-gray-700 rounded-2xl max-w-lg w-full shadow-2xl relative flex flex-col max-h-[90vh]">
+            <div class="px-6 py-5 border-b border-gray-800 bg-[#18181b] rounded-t-2xl flex justify-between items-center">
+                <h3 class="text-xl font-serif text-white flex items-center gap-2"><i class="fas fa-university text-soriano-gold"></i> <span id="modalTitle">Gestión de Cuenta</span></h3>
+                <button onclick="closeModal()" class="w-8 h-8 rounded-full bg-gray-800 text-gray-400 hover:text-white hover:bg-red-900/50 transition flex items-center justify-center"><i class="fas fa-times"></i></button>
             </div>
-            <form id="accountForm" class="p-6 space-y-4">
+            
+            <form id="accountForm" class="p-6 space-y-5 overflow-y-auto custom-scrollbar">
                 <input type="hidden" id="accountId">
                 <input type="hidden" id="currentQrUrl">
 
                 <div class="grid grid-cols-2 gap-4">
                     <div class="col-span-2">
-                        <label class="block text-xs text-gray-400 mb-1 uppercase">Nombre Identificador (Alias)</label>
-                        <input type="text" id="accName" required class="input-soriano" placeholder="Ej. Bancolombia Principal">
+                        <label class="block text-[10px] text-gray-400 mb-1.5 uppercase font-bold tracking-wider">Nombre Identificador (Alias)</label>
+                        <input type="text" id="accName" required class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:border-soriano-gold outline-none transition" placeholder="Ej. Bancolombia Principal">
                     </div>
                     
                     <div>
-                        <label class="block text-xs text-gray-400 mb-1 uppercase">Plataforma</label>
-                        <select id="accType" class="input-soriano appearance-none">
+                        <label class="block text-[10px] text-gray-400 mb-1.5 uppercase font-bold tracking-wider">Plataforma</label>
+                        <select id="accType" class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:border-soriano-gold outline-none transition appearance-none">
                             <option value="banco">Banco</option>
                             <option value="nequi">Billetera (Nequi/Davi)</option>
                             <option value="efectivo">Efectivo / Caja</option>
@@ -62,89 +75,137 @@
                     </div>
 
                     <div id="bankTypeContainer">
-                        <label class="block text-xs text-gray-400 mb-1 uppercase">Tipo de Cuenta</label>
-                        <select id="accSubtype" class="input-soriano appearance-none">
+                        <label class="block text-[10px] text-gray-400 mb-1.5 uppercase font-bold tracking-wider">Tipo de Cuenta</label>
+                        <select id="accSubtype" class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:border-soriano-gold outline-none transition appearance-none">
                             <option value="Ahorros">Ahorros</option>
                             <option value="Corriente">Corriente</option>
                         </select>
                     </div>
 
                     <div id="numberContainer" class="col-span-2">
-                        <label class="block text-xs text-gray-400 mb-1 uppercase" id="numberLabel"># Cuenta</label>
-                        <input type="text" id="accNumber" class="input-soriano font-mono" placeholder="000-000-000">
+                        <label class="block text-[10px] text-gray-400 mb-1.5 uppercase font-bold tracking-wider" id="numberLabel"># Cuenta</label>
+                        <input type="text" id="accNumber" class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:border-soriano-gold outline-none transition font-mono" placeholder="000-000-000">
                     </div>
 
                     <div id="keyContainer" class="col-span-2">
-                        <label class="block text-xs text-gray-400 mb-1 uppercase">Llave / ID Comercio</label>
-                        <input type="text" id="accKey" class="input-soriano" placeholder="Ej. Código de integración o ID">
+                        <label class="block text-[10px] text-gray-400 mb-1.5 uppercase font-bold tracking-wider">Llave / ID Comercio</label>
+                        <input type="text" id="accKey" class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:border-soriano-gold outline-none transition font-mono" placeholder="Ej. Código de integración o ID">
                     </div>
                 </div>
 
-                <div class="bg-black/20 p-3 rounded border border-gray-700">
-                    <label class="block text-xs text-gray-400 mb-2 uppercase">Código QR (Imagen)</label>
+                <div class="bg-gray-900/50 p-4 rounded-xl border border-gray-800">
+                    <label class="block text-[10px] text-gray-400 mb-2 uppercase font-bold tracking-wider">Código QR (Imagen)</label>
                     <div class="flex items-center space-x-4">
-                        <div class="w-16 h-16 bg-gray-800 rounded flex items-center justify-center overflow-hidden border border-gray-600">
+                        <div class="w-16 h-16 bg-[#0f0f10] rounded flex items-center justify-center overflow-hidden border border-gray-700">
                             <img id="qrPreview" src="" class="w-full h-full object-cover hidden">
                             <i id="qrIcon" class="fas fa-qrcode text-2xl text-gray-600"></i>
                         </div>
-                        <input type="file" id="qrInput" accept="image/*" class="text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-semibold file:bg-gray-700 file:text-white hover:file:bg-gray-600">
+                        <input type="file" id="qrInput" accept="image/*" class="text-sm text-gray-400 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-xs file:font-bold file:bg-gray-800 file:text-white hover:file:bg-gray-700 cursor-pointer transition">
                     </div>
                 </div>
                 
-                <div id="taxContainer" class="flex items-center space-x-3 bg-gray-800/50 p-3 rounded border border-gray-700">
-                    <input type="checkbox" id="accTax" class="w-4 h-4 text-soriano-red bg-gray-700 border-gray-600 rounded">
-                    <label for="accTax" class="text-sm text-gray-300 select-none cursor-pointer">Aplica 4x1000</label>
+                <div id="taxContainer" class="flex items-center space-x-3 bg-red-900/10 p-3 rounded-lg border border-red-900/30">
+                    <input type="checkbox" id="accTax" class="w-4 h-4 text-red-500 bg-[#0f0f10] border-gray-600 rounded focus:ring-red-500 focus:ring-2">
+                    <label for="accTax" class="text-xs text-gray-300 select-none cursor-pointer font-bold tracking-wide uppercase">Aplica 4x1000</label>
                 </div>
 
                 <div>
-                    <label class="block text-xs text-gray-400 mb-1 uppercase">Saldo ($)</label>
-                    <input type="text" id="accBalance" class="input-soriano text-xl font-bold" placeholder="0" oninput="formatCurrencyInput(this)">
+                    <label class="block text-[10px] text-gray-400 mb-1.5 uppercase font-bold tracking-wider">Saldo Inicial ($)</label>
+                    <input type="text" id="accBalance" class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-3 text-xl font-bold text-green-400 font-mono focus:border-green-500 outline-none transition" placeholder="0" oninput="formatCurrencyInput(this)">
                 </div>
 
-                <div class="pt-4 flex justify-end space-x-3">
-                    <button type="button" onclick="closeModal()" class="px-4 py-2 text-gray-400 hover:text-white text-sm">Cancelar</button>
-                    <button type="submit" id="saveBtn" class="btn-primary">Guardar</button>
-                </div>
             </form>
+            <div class="p-5 border-t border-gray-800 bg-[#18181b] rounded-b-2xl flex justify-end gap-3">
+                <button type="button" onclick="closeModal()" class="px-6 py-2.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 text-sm font-medium transition">Cancelar</button>
+                <button type="submit" id="saveBtn" onclick="document.getElementById('accountForm').requestSubmit()" class="btn-primary shadow-lg shadow-soriano-gold/20 px-8 py-2.5 rounded-lg text-sm font-bold flex items-center bg-soriano-gold text-black hover:bg-yellow-400">
+                    Guardar Cuenta
+                </button>
+            </div>
         </div>
     </div>
 
     <div id="transferModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-50 backdrop-blur-sm p-4">
-        <div class="bg-gray-900 border border-gray-700 rounded-lg max-w-lg w-full shadow-2xl">
-            <div class="p-6 border-b border-gray-800 flex justify-between items-center bg-gray-800">
-                <h3 class="text-xl font-serif text-white">Transferencia</h3>
-                <button onclick="closeTransferModal()" class="text-gray-400 hover:text-white"><i class="fas fa-times"></i></button>
+        <div class="bg-[#121214] border border-gray-700 rounded-2xl max-w-lg w-full shadow-2xl relative">
+            <div class="px-6 py-5 border-b border-gray-800 bg-[#18181b] rounded-t-2xl flex justify-between items-center">
+                <h3 class="text-xl font-serif text-white flex items-center gap-2"><i class="fas fa-exchange-alt text-blue-400"></i> Transferencia</h3>
+                <button onclick="closeTransferModal()" class="text-gray-400 hover:text-white w-8 h-8 rounded-full flex items-center justify-center hover:bg-gray-800 transition"><i class="fas fa-times"></i></button>
             </div>
-            <form id="transferForm" class="p-6 space-y-5">
+            
+            <form id="transferForm" class="p-6 space-y-6">
                 <div class="grid grid-cols-2 gap-4 relative">
-                    <div>
-                        <label class="block text-[10px] text-gray-500 uppercase mb-1">Origen</label>
-                        <select id="sourceAccount" required class="input-soriano appearance-none border-red-900/50"><option value="">...</option></select>
-                        <div id="sourceBalanceDisplay" class="text-[10px] text-gray-400 mt-1 text-right min-h-[1.5rem]">Saldo: $0</div>
+                    <div class="bg-gray-900/50 p-3 rounded-lg border border-gray-800">
+                        <label class="block text-[9px] text-gray-500 uppercase mb-1.5 font-bold tracking-widest text-center">Origen</label>
+                        <select id="sourceAccount" required class="w-full bg-[#0f0f10] border border-red-900/50 text-red-400 rounded px-2 py-2 text-xs focus:border-red-500 outline-none appearance-none text-center">
+                            <option value="">Seleccionar...</option>
+                        </select>
+                        <div id="sourceBalanceDisplay" class="text-[9px] text-gray-400 mt-2 text-center min-h-[1.5rem] font-mono">Saldo: $0</div>
                     </div>
+                    
                     <div class="absolute inset-0 flex items-center justify-center pointer-events-none mt-[-15px]">
-                        <div class="bg-gray-700 rounded-full p-1 border border-gray-600"><i class="fas fa-arrow-right text-gray-400"></i></div>
+                        <div class="bg-[#18181b] rounded-full p-2 border border-gray-700 shadow-lg text-gray-400"><i class="fas fa-arrow-right"></i></div>
                     </div>
-                    <div>
-                        <label class="block text-[10px] text-gray-500 uppercase mb-1">Destino</label>
-                        <select id="destAccount" required class="input-soriano appearance-none border-green-900/50"><option value="">...</option></select>
+                    
+                    <div class="bg-gray-900/50 p-3 rounded-lg border border-gray-800">
+                        <label class="block text-[9px] text-gray-500 uppercase mb-1.5 font-bold tracking-widest text-center">Destino</label>
+                        <select id="destAccount" required class="w-full bg-[#0f0f10] border border-green-900/50 text-green-400 rounded px-2 py-2 text-xs focus:border-green-500 outline-none appearance-none text-center">
+                            <option value="">Seleccionar...</option>
+                        </select>
                     </div>
                 </div>
-                <div><label class="block text-xs text-gray-400 mb-1 uppercase">Monto</label><input type="text" id="transferAmount" class="input-soriano text-xl font-bold" oninput="formatCurrencyInput(this)"></div>
-                <div id="taxPreview" class="hidden bg-red-900/20 p-3 rounded border border-red-900/50 text-sm flex justify-between items-center"><span class="text-red-400">Aplica 4x1000</span><span class="text-white font-bold" id="taxAmountDisplay">-$0</span></div>
-                <div><label class="block text-xs text-gray-400 mb-1 uppercase">Nota</label><input type="text" id="transferNote" class="input-soriano"></div>
-                <div class="pt-2"><button type="submit" class="btn-primary w-full">Confirmar</button></div>
+
+                <div>
+                    <label class="block text-[10px] text-gray-400 mb-1.5 uppercase font-bold tracking-wider">Monto a Transferir ($)</label>
+                    <input type="text" id="transferAmount" class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-3 text-2xl font-bold text-white font-mono text-center focus:border-blue-500 outline-none transition" oninput="formatCurrencyInput(this)" placeholder="0">
+                </div>
+                
+                <div id="taxPreview" class="hidden bg-red-900/20 p-3 rounded-lg border border-red-900/50 text-xs flex justify-between items-center">
+                    <span class="text-red-400 font-bold uppercase tracking-widest">Aplica 4x1000</span>
+                    <span class="text-white font-mono font-bold" id="taxAmountDisplay">-$0</span>
+                </div>
+                
+                <div>
+                    <label class="block text-[10px] text-gray-400 mb-1.5 uppercase font-bold tracking-wider">Nota / Descripción (Opcional)</label>
+                    <input type="text" id="transferNote" class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-2.5 text-sm text-white focus:border-blue-500 outline-none transition" placeholder="Ej. Reposición caja menor">
+                </div>
+
+                <div class="pt-2">
+                    <button type="submit" class="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 rounded-lg shadow-lg shadow-blue-900/20 transition tracking-wider uppercase text-sm">
+                        Confirmar Transferencia
+                    </button>
+                </div>
             </form>
         </div>
     </div>
 
     <div id="historyModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-50 backdrop-blur-sm p-4 overflow-y-auto">
-        <div class="bg-gray-900 border border-gray-700 rounded-lg max-w-3xl w-full shadow-2xl my-8 h-[80vh] flex flex-col">
-            <div class="p-6 border-b border-gray-800 bg-gray-900 flex flex-col md:flex-row justify-between items-center gap-4">
-                <div><h3 class="text-xl font-serif text-white" id="historyTitle">Extracto</h3></div>
-                <div class="flex items-center space-x-2"><label class="text-xs text-gray-400">Mes:</label><input type="month" id="historyMonthPicker" class="input-soriano py-1 px-3 text-sm w-40" onchange="filterHistory()"><button onclick="closeHistoryModal()" class="text-gray-400 hover:text-white ml-4"><i class="fas fa-times"></i></button></div>
+        <div class="bg-[#121214] border border-gray-700 rounded-2xl max-w-3xl w-full shadow-2xl my-8 h-[85vh] flex flex-col">
+            
+            <div class="p-6 border-b border-gray-800 bg-[#18181b] rounded-t-2xl flex flex-col md:flex-row justify-between items-center gap-4">
+                <div>
+                    <h3 class="text-xl font-serif text-white flex items-center gap-2"><i class="fas fa-list-alt text-gray-500"></i> <span id="historyTitle">Extracto</span></h3>
+                </div>
+                <div class="flex items-center gap-3">
+                    <div class="bg-[#0f0f10] border border-gray-700 rounded-lg flex items-center px-3 shadow-sm">
+                        <i class="fas fa-calendar-alt text-gray-500 text-xs"></i>
+                        <input type="month" id="historyMonthPicker" class="bg-transparent text-white text-xs py-2 pl-2 outline-none border-none cursor-pointer font-bold" style="color-scheme: dark;" onchange="filterHistory()">
+                    </div>
+                    <button onclick="closeHistoryModal()" class="w-8 h-8 rounded-full bg-gray-800 text-gray-400 hover:text-white hover:bg-red-900/50 transition flex items-center justify-center"><i class="fas fa-times"></i></button>
+                </div>
             </div>
-            <div class="flex-1 overflow-y-auto p-0 custom-scrollbar"><table class="w-full text-left text-sm"><thead class="bg-gray-900 text-gray-500 uppercase text-xs sticky top-0 z-10 shadow-sm"><tr><th class="p-4 bg-gray-900">Fecha</th><th class="p-4 bg-gray-900">Concepto</th><th class="p-4 bg-gray-900 text-right">Valor</th></tr></thead><tbody id="historyBody" class="divide-y divide-gray-800 text-gray-300"></tbody></table></div>
+
+            <div class="flex-1 overflow-y-auto p-0 custom-scrollbar">
+                <table class="w-full text-left text-sm border-collapse">
+                    <thead class="bg-gray-900/80 text-gray-500 uppercase text-[10px] sticky top-0 z-10 shadow-sm border-b border-gray-800 backdrop-blur-md">
+                        <tr>
+                            <th class="p-4 font-bold tracking-wider">Fecha y Hora</th>
+                            <th class="p-4 font-bold tracking-wider">Concepto</th>
+                            <th class="p-4 font-bold tracking-wider text-right">Valor</th>
+                        </tr>
+                    </thead>
+                    <tbody id="historyBody" class="divide-y divide-gray-800/50 text-gray-300">
+                        </tbody>
+                </table>
+            </div>
         </div>
     </div>
 

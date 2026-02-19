@@ -47,8 +47,8 @@
                 </div>
             </div>
 
-            <div class="flex-1 overflow-y-auto lg:overflow-hidden bg-[#0f0f10] custom-scrollbar">
-                <form id="orderForm" class="flex flex-col lg:grid lg:grid-cols-12 lg:h-full">
+            <div class="flex-1 overflow-y-auto bg-[#0f0f10] custom-scrollbar h-full">
+                <form id="orderForm" class="flex flex-col lg:grid lg:grid-cols-12 min-h-full">
                     
                     <input type="hidden" id="orderId">
                     <input type="hidden" id="status" value="recibido">
@@ -107,8 +107,7 @@
                         </div>
                     </div>
 
-                    <div class="col-span-12 lg:col-span-8 xl:col-span-9 flex flex-col lg:h-full bg-[#0f0f10] p-4 lg:p-6 relative order-2 gap-4 lg:gap-5">
-
+                    <div class="col-span-12 lg:col-span-8 xl:col-span-9 flex flex-col min-h-full bg-[#0f0f10] p-4 lg:p-6 relative order-2 gap-4 lg:gap-5">
                         <div class="bg-[#18181b] p-4 lg:p-5 rounded-xl border border-gray-700 shadow-lg z-20">
                             <div class="flex flex-col md:flex-row gap-4 lg:gap-5">
                                 
@@ -202,17 +201,30 @@
                                 <textarea id="orderNotes" class="w-full h-[calc(100%-1.5rem)] bg-transparent text-gray-300 text-sm resize-none focus:outline-none" placeholder="Instrucciones especiales para esta orden..."></textarea>
                             </div>
                             
-                            <div class="col-span-12 md:col-span-5 bg-gradient-to-br from-gray-900 to-[#18181b] p-4 rounded-xl border border-gray-700 flex flex-col justify-center h-28 lg:h-full">
-                                <div class="flex justify-between items-center mb-2">
+                            <div class="col-span-12 md:col-span-5 bg-gradient-to-br from-gray-900 to-[#18181b] p-4 rounded-xl border border-gray-700 flex flex-col justify-center h-auto gap-3">                                
+                                <div class="flex justify-between items-center border-b border-gray-700 pb-2 mb-2 flex-shrink-0">
                                     <label id="paymentLabel" class="text-xs text-green-500 uppercase font-bold flex items-center gap-1">
                                         <i class="fas fa-cash-register"></i> Total a Pagar
                                     </label>
-                                    
-                                    <select id="targetAccount" class="bg-[#0f0f10] border border-gray-600 text-gray-400 text-[10px] rounded px-2 py-1 outline-none h-6 w-32">
-                                        <option value="">Cuenta Destino...</option>
-                                    </select>
+                                    <span class="text-[10px] text-gray-500 cursor-pointer hover:text-white" onclick="resetPayments()">
+                                        <i class="fas fa-sync"></i> Reset
+                                    </span>
                                 </div>
-                                <input type="text" id="advancePayment" class="w-full bg-transparent border-b border-gray-600 text-white text-2xl lg:text-3xl font-bold p-1 focus:border-green-500 outline-none text-right placeholder-gray-700" placeholder="$0" oninput="formatCurrencyInput(this)">
+
+                            <div id="paymentsContainer" class="flex flex-col gap-2 w-full">
+                                </div>
+
+                                <div class="flex-shrink-0 mt-2 border-t border-gray-700 pt-2">
+                                    <button type="button" onclick="addPaymentRow()" class="w-full text-xs text-soriano-gold hover:text-white flex items-center gap-2 border border-dashed border-gray-700 rounded p-1.5 justify-center hover:bg-gray-800 transition mb-2">
+                                        <i class="fas fa-plus-circle"></i> Agregar otro método
+                                    </button>
+
+                                    <div class="text-right">
+                                        <span class="text-[10px] text-gray-500 uppercase mr-2">Total Recibido:</span>
+                                        <span id="totalPaymentDisplay" class="text-white font-bold font-mono text-sm">$0</span>
+                                    </div>
+                                </div>
+
                             </div>
                         </div>
 

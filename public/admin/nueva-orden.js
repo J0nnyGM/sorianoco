@@ -25,9 +25,13 @@ const orderItemsBody = document.getElementById('orderItemsBody');
 const orderTotalDisplay = document.getElementById('orderTotalDisplay');
 const itemsCountDisplay = document.getElementById('itemsCount');
 const measuresContainer = document.getElementById('measuresContainer');
-const advanceInput = document.getElementById('advancePayment');
-const targetAccountSelect = document.getElementById('targetAccount');
-const paymentLabel = document.getElementById('paymentLabel'); // La etiqueta dinámica
+// NUEVAS REFERENCIAS DOM
+const paymentsContainer = document.getElementById('paymentsContainer');
+const paymentLabel = document.getElementById('paymentLabel');
+const totalPaymentDisplay = document.getElementById('totalPaymentDisplay');
+
+// Variable para guardar el HTML de las opciones de cuentas (para no consultar a Firebase cada vez que agregamos fila)
+let accountsOptionsCache = "";
 
 // --- ESTADO LOCAL ---
 let clientsCache = [];
@@ -89,14 +93,67 @@ async function loadInventoryProducts() {
     productsCache = [];
     snap.forEach(d => { const p = d.data(); p.id = d.id; productsCache.push(p); });
 }
-
 async function loadAccounts() {
     const q = query(collection(db, "accounts"), where("status", "==", "active"), orderBy("name"));
     const snap = await getDocs(q);
-    const options = '<option value="">Cuenta Destino...</option>' + 
+    
+    // Guardamos el HTML de las opciones en memoria
+    accountsOptionsCache = '<option value="">Seleccionar cuenta...</option>' + 
         snap.docs.map(doc => `<option value="${doc.id}">${doc.data().name}</option>`).join('');
-    targetAccountSelect.innerHTML = options;
+    
+    // Iniciamos con una fila vacía por defecto
+    resetPayments();
 }
+
+window.addPaymentRow = (amount = "") => {
+    const rowId = Date.now(); // ID único para el div
+    const row = document.createElement('div');
+    row.className = "payment-row flex gap-2 items-center animate-fade-in"; // animate-fade-in es opcional si tienes css
+    row.id = `row-${rowId}`;
+
+    row.innerHTML = `
+        <div class="w-1/3">
+            <select class="pay-account w-full bg-[#0f0f10] border border-gray-600 text-gray-300 text-[10px] rounded px-2 py-2 outline-none">
+                ${accountsOptionsCache}
+            </select>
+        </div>
+        <div class="w-2/3 relative flex items-center gap-1">
+            <div class="relative w-full">
+                <span class="absolute left-2 top-2 text-gray-500 text-xs">$</span>
+                <input type="text" class="pay-amount w-full bg-[#0f0f10] border border-gray-600 text-white text-sm font-bold pl-5 py-2 rounded focus:border-green-500 outline-none text-right placeholder-gray-600" 
+                    placeholder="0" oninput="formatCurrencyInput(this); updateTotalPaymentDisplay();" value="${amount}">
+            </div>
+            <button type="button" onclick="removePaymentRow('${rowId}')" class="text-red-500 hover:text-red-400 p-1">
+                <i class="fas fa-trash-alt"></i>
+            </button>
+        </div>
+    `;
+    
+    paymentsContainer.appendChild(row);
+    updateTotalPaymentDisplay();
+};
+
+window.removePaymentRow = (id) => {
+    const row = document.getElementById(`row-${id}`);
+    if (row) row.remove();
+    updateTotalPaymentDisplay();
+};
+
+window.resetPayments = () => {
+    paymentsContainer.innerHTML = "";
+    addPaymentRow(); // Agrega una fila limpia
+    checkPaymentRules(); // Revisa si debe auto-llenarse
+};
+
+// Función auxiliar para sumar visualmente lo que el usuario va ingresando
+window.updateTotalPaymentDisplay = () => {
+    let total = 0;
+    document.querySelectorAll('.pay-amount').forEach(input => {
+        const val = parseInt(input.value.replace(/\D/g, '')) || 0;
+        total += val;
+    });
+    if(totalPaymentDisplay) totalPaymentDisplay.textContent = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 }).format(total);
+};
 
 async function loadUsersForSelect() {
     try {
@@ -213,7 +270,10 @@ function renderInventoryList(term = '') {
 function selectProduct(product) {
     inventoryList.classList.add('hidden');
     selectedSizeInput.value = "";
-    sizeSelectorContainer.innerHTML = ""; // Limpiar botones anteriores
+    
+    // 1. Limpiamos el contenedor usando el nombre correcto
+    sizeSelectorContainer.innerHTML = ""; 
+    
     imgPreviewContainer.classList.add('hidden');
     imgPreviewSrc.src = "";
 
@@ -229,41 +289,70 @@ function selectProduct(product) {
         addItemDesc.value = product.name;
         if (product.price) addItemPrice.value = new Intl.NumberFormat('es-CO').format(product.price);
         
-        // CORRECCIÓN: Botones de talla con stock visible
+        // --- LÓGICA DE TALLAS ORDENADAS ---
+        const orderedSizes = ["XXS", "XS", "S", "M", "L", "XL", "XXL", "2XL", "3XL", "Unica", "4", "6", "8", "10", "12", "14", "16", "18", "20", "28", "30", "32", "34", "36", "38", "40", "42", "44"];
+
         if (product.sizes) {
-            Object.entries(product.sizes).forEach(([size, qty]) => {
+            // Convertir a array y ordenar
+            const entries = Object.entries(product.sizes);
+
+            entries.sort((a, b) => {
+                let indexA = orderedSizes.indexOf(a[0].toUpperCase());
+                let indexB = orderedSizes.indexOf(b[0].toUpperCase());
+                
+                // Si no está en la lista, va al final
+                if (indexA === -1) indexA = 999;
+                if (indexB === -1) indexB = 999;
+
+                // Si ambos son desconocidos, orden alfabético/numérico simple
+                if (indexA === 999 && indexB === 999) {
+                    return a[0].localeCompare(b[0], undefined, { numeric: true });
+                }
+
+                return indexA - indexB;
+            });
+
+            // Crear botones
+            let hasStock = false;
+            entries.forEach(([size, qty]) => {
                 if (qty > 0) {
+                    hasStock = true;
                     const btn = document.createElement('button');
                     btn.type = "button";
-                    // Estilo de botón pequeño
+                    // Clase base del botón
                     btn.className = "size-btn px-2 py-1 bg-gray-800 border border-gray-600 rounded text-[10px] text-gray-300 hover:bg-gray-700 transition flex items-center gap-1";
                     
-                    // HTML con cantidad entre paréntesis
                     btn.innerHTML = `<span class="font-bold">${size}</span> <span class="text-gray-500">(${qty})</span>`;
                     
                     btn.onclick = () => {
-                        // Resetear estilos
+                        // Resetear estilos de todos
                         document.querySelectorAll('.size-btn').forEach(b => {
                             b.className = "size-btn px-2 py-1 bg-gray-800 border border-gray-600 rounded text-[10px] text-gray-300 hover:bg-gray-700 transition flex items-center gap-1";
-                            b.querySelector('span:last-child').className = "text-gray-500"; // Reset color qty
+                            b.querySelector('span:last-child').className = "text-gray-500";
                         });
                         
-                        // Estilo activo
-                        btn.className = "size-btn px-2 py-1 bg-soriano-red border border-soriano-red rounded text-[10px] text-white font-bold shadow flex items-center gap-1";
-                        btn.querySelector('span:last-child').className = "text-white/70"; // Color qty activo
+                        // Activar este botón
+                        btn.className = "size-btn px-2 py-1 bg-soriano-red border border-soriano-red rounded text-[10px] text-white font-bold shadow flex items-center gap-1 transform scale-105";
+                        btn.querySelector('span:last-child').className = "text-white/70";
                         
                         selectedSizeInput.value = size;
                         addItemDesc.value = `${product.name} (Talla ${size})`;
                     };
+                    
+                    // CORRECCIÓN AQUÍ: Usamos sizeSelectorContainer
                     sizeSelectorContainer.appendChild(btn);
                 }
             });
+
+            if (!hasStock) {
+                sizeSelectorContainer.innerHTML = '<span class="text-red-500 text-xs font-bold px-2">Agotado</span>';
+            }
         }
         
         if(product.imageUrl) { 
             imgPreviewSrc.src = product.imageUrl; 
             imgPreviewContainer.classList.remove('hidden'); 
-            imgPreviewContainer.classList.add('flex'); // Asegurar flex display
+            imgPreviewContainer.classList.add('flex'); 
         }
     }
 }
@@ -330,9 +419,12 @@ function renderOrderItems() {
     
     if (orderItems.length === 0) orderItemsBody.innerHTML = `<tr><td colspan="6" class="p-8 text-center text-xs text-gray-500">Agregue prendas al pedido.</td></tr>`;
     
-    // Actualizar Totales y Texto Dinámico
+
+    // Al final de la función, llama a la regla:
     orderTotalDisplay.textContent = copFormatter.format(total);
     itemsCountDisplay.textContent = `${orderItems.length} items`;
+    
+    checkPaymentRules(); // <--- AGREGAR ESTO AL FINAL
 
     // LÓGICA DE ETIQUETA
     if (orderItems.length > 0 && hasCustomItem) {
@@ -346,80 +438,168 @@ function renderOrderItems() {
 
 // --- GUARDAR ORDEN ---
 window.saveOrder = async () => {
+    // 1. Validaciones Básicas
     if (!clientSelect.value) { alert("Seleccione un cliente"); return; }
     if (orderItems.length === 0) { alert("La orden está vacía"); return; }
     if (!deadlineInput.value) { alert("Defina fecha de entrega"); return; }
 
-    const rawAdvance = advanceInput.value.replace(/\D/g, '');
-    const advance = parseInt(rawAdvance) || 0;
-    
-    // Si hay un anticipo ingresado, exigir cuenta destino
-    if (advance > 0 && !targetAccountSelect.value) { alert("Seleccione cuenta para el pago"); return; }
+    // 2. Recolectar Pagos Dinámicos
+    const paymentRows = document.querySelectorAll('.payment-row');
+    let collectedPayments = [];
+    let totalAdvance = 0;
+    let usedAccounts = new Set(); // Para validar duplicados
 
-    const respId = responsableSelect.value;
-    const respName = responsableSelect.options[responsableSelect.selectedIndex]?.text || "Sin Asignar";
+    for (const row of paymentRows) {
+        const select = row.querySelector('.pay-account');
+        const input = row.querySelector('.pay-amount');
+        
+        const amount = parseInt(input.value.replace(/\D/g, '')) || 0;
+        const accId = select.value;
 
-    if(!confirm("¿Generar Orden de Producción?")) return;
+        // Solo procesamos filas con dinero > 0
+        if (amount > 0) {
+            if (!accId) { alert("Hay un monto ingresado sin cuenta seleccionada."); return; }
+            /* Si quieres permitir la misma cuenta varias veces (ej: 2 cheques mismo banco), quita este if */
+            if (usedAccounts.has(accId)) { alert("Ha seleccionado la misma cuenta dos veces. Por favor súmelos en una sola fila."); return; }
+            
+            usedAccounts.add(accId);
+            collectedPayments.push({
+                amount: amount,
+                accountId: accId,
+                date: new Date().toISOString(),
+                type: 'advance'
+            });
+            totalAdvance += amount;
+        }
+    }
+
+    const totalOrder = orderItems.reduce((sum, i) => sum + i.totalPrice, 0);
+
+    if (totalAdvance > totalOrder) { alert(`El pago total (${totalAdvance}) supera el valor de la orden (${totalOrder}).`); return; }
+
+    // Advertencia de Producto Terminado
+    const isAllFinished = orderItems.every(item => item.inventoryId);
+    if (isAllFinished && totalAdvance < totalOrder) {
+        if (!confirm("ATENCIÓN: Es venta de productos terminados pero NO se cobra el 100%. ¿Continuar generando deuda?")) return;
+    }
+
+    if(!confirm(`¿Generar Orden? Total Abono: ${new Intl.NumberFormat('es-CO').format(totalAdvance)}`)) return;
 
     try {
         await runTransaction(db, async (transaction) => {
+            // --- A. INVENTARIO (Lectura y Validación) ---
+            const inventoryReads = [];
+            for (const item of orderItems) {
+                if (item.inventoryId) {
+                    inventoryReads.push({ ref: doc(db, "inventory", item.inventoryId), itemData: item });
+                }
+            }
+            
             const counterRef = doc(db, "counters", "orders");
-            const counterSnap = await transaction.get(counterRef);
+            const counterPromise = transaction.get(counterRef);
+            const inventoryPromises = Promise.all(inventoryReads.map(i => transaction.get(i.ref)));
+            const [counterSnap, inventorySnaps] = await Promise.all([counterPromise, inventoryPromises]);
+
+            inventorySnaps.forEach((snap, index) => {
+                const item = inventoryReads[index].itemData;
+                if (!snap.exists()) throw `Producto no encontrado: ${item.description}`;
+                const pData = snap.data();
+                const qty = item.quantity;
+
+                if (pData.sizes) {
+                    const sizeKey = item.size;
+                    const stock = pData.sizes[sizeKey];
+                    if (stock < qty) throw `Stock insuficiente: ${item.description} (${sizeKey})`;
+                    transaction.update(inventoryReads[index].ref, { [`sizes.${sizeKey}`]: stock - qty });
+                } else {
+                    const stock = parseInt(pData.quantity || 0);
+                    if (stock < qty) throw `Stock insuficiente: ${item.description}`;
+                    transaction.update(inventoryReads[index].ref, { quantity: stock - qty });
+                }
+            });
+
+            // --- B. CREAR ORDEN ---
             let nextId = 1;
             if (counterSnap.exists()) nextId = counterSnap.data().current + 1;
             transaction.set(counterRef, { current: nextId }, { merge: true });
 
-            const totalAmount = orderItems.reduce((sum, i) => sum + i.totalPrice, 0);
             const orderRef = doc(collection(db, "orders"));
-
+            
             const orderData = {
                 orderNumber: nextId,
                 clientId: clientSelect.value,
                 clientName: clientSelect.options[clientSelect.selectedIndex].text,
                 deadline: deadlineInput.value,
-                status: 'recibido',
+                status: isAllFinished && totalAdvance >= totalOrder ? 'entregado' : 'recibido',
                 items: orderItems,
                 appliedMeasures: currentMeasures,
-                totalAmount: totalAmount,
+                totalAmount: totalOrder,
                 notes: orderNotesInput.value,
-                responsableId: respId,
-                responsableName: respName,
+                responsableId: responsableSelect.value,
+                responsableName: responsableSelect.options[responsableSelect.selectedIndex]?.text,
                 createdAt: serverTimestamp(),
                 updatedAt: serverTimestamp(),
-                advancePayment: advance,
-                balanceDue: totalAmount - advance,
-                paymentAccount: targetAccountSelect.value || null
+                advancePayment: totalAdvance,
+                balanceDue: totalOrder - totalAdvance,
+                paymentHistory: collectedPayments // Array dinámico de pagos
             };
+            
+            transaction.set(orderRef, orderData);
 
-            if (advance > 0) {
-                orderData.paymentHistory = [{ 
-                    amount: advance, accountId: targetAccountSelect.value, 
-                    date: new Date().toISOString(), type: 'advance' 
-                }];
-                const accRef = doc(db, "accounts", targetAccountSelect.value);
-                transaction.update(accRef, { balance: increment(advance) });
+            // --- C. TRANSACCIONES FINANCIERAS (Bucle dinámico) ---
+            // Iteramos sobre el array que recolectamos al principio
+            for (const pay of collectedPayments) {
+                const accRef = doc(db, "accounts", pay.accountId);
+                transaction.update(accRef, { balance: increment(pay.amount) });
                 
                 const logRef = doc(collection(db, "transactions"));
                 transaction.set(logRef, { 
-                    accountId: targetAccountSelect.value, type: 'income', amount: advance, 
-                    description: `Anticipo Orden #${nextId}`, relatedDocId: orderRef.id, date: serverTimestamp() 
+                    accountId: pay.accountId, 
+                    type: 'income', 
+                    amount: pay.amount, 
+                    description: `Anticipo Orden #${nextId}`, 
+                    relatedDocId: orderRef.id, 
+                    date: serverTimestamp() 
                 });
             }
-
-            transaction.set(orderRef, orderData);
         });
 
-        alert("Orden creada correctamente.");
+        alert("Orden creada exitosamente.");
         window.location.href = 'ordenes.html';
 
     } catch (error) {
         console.error("Error:", error);
-        alert("Error al guardar: " + error.message);
+        alert(typeof error === 'string' ? error : error.message);
     }
-};
+};                                                                                                 
 
 window.formatCurrencyInput = (input) => { 
     let value = input.value.replace(/\D/g, ''); 
     if (value === '') { input.value = ''; return; } 
     input.value = new Intl.NumberFormat('es-CO').format(parseInt(value)); 
 };
+
+function checkPaymentRules() {
+    if (orderItems.length === 0) return;
+
+    const totalOrder = orderItems.reduce((sum, i) => sum + i.totalPrice, 0);
+    const isAllFinished = orderItems.every(item => item.inventoryId);
+
+    if (isAllFinished) {
+        // VENTA DIRECTA: 100% PAGO
+        paymentLabel.innerHTML = `<i class="fas fa-check-circle"></i> Venta Directa (100%)`;
+        paymentLabel.className = "text-xs text-green-400 uppercase font-bold flex items-center gap-1";
+        
+        // Reiniciamos a 1 sola fila y le ponemos el valor total
+        paymentsContainer.innerHTML = "";
+        const formattedTotal = new Intl.NumberFormat('es-CO').format(totalOrder);
+        addPaymentRow(formattedTotal);
+    
+    } else {
+        // ANTICIPO TALLER
+        paymentLabel.innerHTML = `<i class="fas fa-cut"></i> Anticipo Taller`;
+        paymentLabel.className = "text-xs text-soriano-gold uppercase font-bold flex items-center gap-1";
+        // Aquí no forzamos valor, dejamos lo que esté o vaciamos si quieres:
+        // paymentsContainer.innerHTML = ""; addPaymentRow();
+    }
+}

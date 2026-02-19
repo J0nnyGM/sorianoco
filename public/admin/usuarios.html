@@ -3,51 +3,61 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Soriano | Usuarios</title>
+    <title>Soriano | Personal y RRHH</title>
     <link href="../css/styles.css" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="icon" href="data:,">
+    <style>
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #18181b; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+    </style>
 </head>
 <body class="bg-soriano-dark text-gray-300 font-sans antialiased">
 
     <div id="app-layout" class="flex h-screen overflow-hidden">
         
-        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-soriano-dark p-6 md:p-12 w-full">
+        <main class="flex-1 overflow-x-hidden overflow-y-auto bg-soriano-dark p-6 md:p-12 w-full flex flex-col">
             
-            <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8 gap-4">
+            <div class="flex flex-col md:flex-row justify-between items-start md:items-end mb-8 gap-6">
                 <div>
-                    <h1 class="text-3xl font-serif text-white mb-1">Personal</h1>
-                    <p class="text-gray-500 text-sm">Gestiona el acceso y roles del equipo.</p>
+                    <h1 class="text-3xl font-serif text-white mb-2 flex items-center gap-3">
+                        <span class="bg-purple-900/30 text-purple-400 border border-purple-900 w-10 h-10 rounded-lg flex items-center justify-center text-lg shadow-lg">
+                            <i class="fas fa-id-badge"></i>
+                        </span>
+                        Personal & RRHH
+                    </h1>
+                    <p class="text-gray-500 text-sm ml-14 max-w-md">Gestiona accesos, roles, datos bancarios y nómina de tu equipo.</p>
                 </div>
                 
-                <div class="flex space-x-2">
-                    <button id="filterAll" class="px-4 py-2 bg-gray-800 text-white text-xs rounded hover:bg-gray-700 transition active-filter ring-1 ring-gray-600">
+                <div class="flex space-x-2 bg-[#121214] p-1.5 rounded-lg border border-gray-800 shadow-sm">
+                    <button id="filterAll" class="px-5 py-2 text-xs font-bold uppercase tracking-wider rounded-md transition bg-gray-800 text-white shadow-sm border border-gray-700">
                         Todos
                     </button>
-                    <button id="filterPending" class="px-4 py-2 bg-gray-800 text-gray-400 text-xs rounded hover:bg-gray-700 transition relative">
+                    <button id="filterPending" class="px-5 py-2 text-xs font-bold uppercase tracking-wider rounded-md transition text-gray-500 hover:text-white relative">
                         Pendientes
-                        <span id="badgePending" class="hidden absolute -top-1 -right-1 bg-soriano-red text-white text-[10px] w-4 h-4 flex items-center justify-center rounded-full">0</span>
+                        <span id="badgePending" class="hidden absolute -top-1.5 -right-1.5 bg-soriano-red text-white text-[9px] w-5 h-5 flex items-center justify-center rounded-full border-2 border-[#121214] shadow-md">0</span>
                     </button>
                 </div>
             </div>
 
-            <div class="bg-black/40 border border-gray-800 rounded-lg overflow-hidden shadow-xl">
-                <div class="overflow-x-auto">
+            <div class="bg-[#121214] border border-gray-800 rounded-2xl overflow-hidden shadow-2xl flex-1 flex flex-col min-h-0 relative">
+                <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-purple-500/5 to-transparent rounded-bl-full pointer-events-none"></div>
+                
+                <div class="overflow-x-auto flex-1 custom-scrollbar z-10">
                     <table class="w-full text-left border-collapse">
-                        <thead>
-                            <tr class="border-b border-gray-800 text-xs uppercase text-gray-500 bg-gray-900/50">
-                                <th class="px-6 py-4 font-medium tracking-wider">Usuario</th>
-                                <th class="px-6 py-4 font-medium tracking-wider">Rol / Dpto</th>
-                                <th class="px-6 py-4 font-medium tracking-wider">Estado</th>
-                                <th class="px-6 py-4 font-medium tracking-wider text-right">Acciones</th>
+                        <thead class="bg-[#18181b] text-xs uppercase text-gray-500 sticky top-0 z-20 shadow-sm border-b border-gray-800">
+                            <tr>
+                                <th class="px-6 py-4 font-bold tracking-wider">Empleado / Usuario</th>
+                                <th class="px-6 py-4 font-bold tracking-wider">Rol en Sistema</th>
+                                <th class="px-6 py-4 font-bold tracking-wider text-center">Estado</th>
+                                <th class="px-6 py-4 font-bold tracking-wider text-right">Acciones</th>
                             </tr>
                         </thead>
-                        <tbody id="usersTableBody" class="divide-y divide-gray-800 text-sm">
-                            <tr>
-                                <td colspan="4" class="px-6 py-8 text-center text-gray-500">
-                                    <i class="fas fa-circle-notch fa-spin mr-2"></i> Cargando usuarios...
-                                </td>
-                            </tr>
+                        <tbody id="usersTableBody" class="divide-y divide-gray-800/50 text-sm">
+                            <tr><td colspan="4" class="px-6 py-12 text-center text-gray-500 italic"><i class="fas fa-circle-notch fa-spin mr-2"></i> Cargando personal...</td></tr>
                         </tbody>
                     </table>
                 </div>
@@ -56,24 +66,170 @@
         </main>
     </div>
 
-    <div id="actionModal" class="fixed inset-0 bg-black/80 hidden items-center justify-center z-50 backdrop-blur-sm">
-        <div class="bg-gray-900 border border-gray-700 p-6 rounded-lg max-w-sm w-full mx-4 shadow-2xl">
-            <h3 class="text-lg font-serif text-white mb-2" id="modalTitle">Confirmar Acción</h3>
-            <p class="text-gray-400 text-sm mb-6" id="modalDesc">¿Estás seguro?</p>
-            <div class="flex justify-end space-x-3">
-                <button onclick="closeModal()" class="px-4 py-2 text-gray-400 hover:text-white text-sm">Cancelar</button>
-                <button id="modalConfirmBtn" class="px-4 py-2 bg-soriano-red text-white rounded text-sm hover:bg-red-700 transition">Confirmar</button>
+    <div id="userProfileModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-50 backdrop-blur-sm p-4 overflow-y-auto">
+        <div class="bg-[#121214] border border-gray-700 rounded-2xl max-w-4xl w-full shadow-2xl relative flex flex-col max-h-[95vh] my-8">
+            
+            <div class="px-6 py-5 border-b border-gray-800 bg-[#18181b] rounded-t-2xl flex justify-between items-center">
+                <h3 class="text-xl font-serif text-white flex items-center gap-2"><i class="fas fa-user-edit text-purple-400"></i> <span id="profileModalTitle">Ficha del Empleado</span></h3>
+                <button onclick="closeProfileModal()" class="w-8 h-8 rounded-full bg-gray-800 text-gray-400 hover:text-white hover:bg-red-900/50 transition flex items-center justify-center"><i class="fas fa-times"></i></button>
+            </div>
+
+            <form id="userProfileForm" class="p-6 space-y-8 overflow-y-auto custom-scrollbar">
+                <input type="hidden" id="editUserId">
+                <input type="hidden" id="editUserStatus">
+                <input type="hidden" id="currentUserPhotoUrl">
+
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                    
+                    <div class="space-y-6">
+                        <div class="flex flex-col items-center bg-gray-900/50 p-6 rounded-xl border border-gray-800">
+                            <div class="relative w-32 h-32 mb-4">
+                                <img id="userPhotoPreview" src="" class="w-full h-full rounded-full object-cover border-4 border-gray-800 shadow-xl hidden">
+                                <div id="userPhotoPlaceholder" class="w-full h-full rounded-full bg-gray-800 border-4 border-gray-700 flex items-center justify-center text-4xl text-gray-500 shadow-inner">
+                                    <i class="fas fa-camera"></i>
+                                </div>
+                                <label for="userPhotoInput" class="absolute bottom-0 right-0 bg-purple-600 hover:bg-purple-500 text-white w-10 h-10 rounded-full flex items-center justify-center cursor-pointer shadow-lg transition border-2 border-[#121214]">
+                                    <i class="fas fa-upload text-sm"></i>
+                                </label>
+                                <input type="file" id="userPhotoInput" accept="image/*" class="hidden">
+                            </div>
+                            <p class="text-xs text-gray-500 text-center uppercase tracking-widest font-bold">Foto de Perfil</p>
+                        </div>
+
+                        <div>
+                            <label class="block text-[10px] text-purple-400 mb-1.5 uppercase font-bold tracking-wider">Rol de Acceso</label>
+                            <select id="userRole" required class="w-full bg-[#0f0f10] border border-purple-900/50 rounded-lg px-3 py-3 text-sm text-white focus:border-purple-500 outline-none transition appearance-none font-bold">
+                                <option value="vendedor">Asesor / Vendedor</option>
+                                <option value="contabilidad">Contabilidad / Bodega</option>
+                                <option value="admin">Administrador Total</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="md:col-span-2 space-y-6">
+                        
+                        <div>
+                            <h4 class="text-[10px] font-bold text-gray-500 uppercase tracking-widest border-b border-gray-800 pb-2 mb-4">Información Personal</h4>
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-[10px] text-gray-400 mb-1.5 uppercase font-bold">Nombre Completo</label>
+                                    <input type="text" id="userName" required class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-soriano-gold outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] text-gray-400 mb-1.5 uppercase font-bold">Correo Electrónico (No editable)</label>
+                                    <input type="email" id="userEmail" disabled class="w-full bg-gray-900 border border-gray-800 rounded-lg px-3 py-2 text-sm text-gray-500 outline-none cursor-not-allowed">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] text-gray-400 mb-1.5 uppercase font-bold">Teléfono / Celular</label>
+                                    <input type="tel" id="userPhone" class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:border-soriano-gold outline-none">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] text-gray-400 mb-1.5 uppercase font-bold">Dirección Residencia</label>
+                                    <input type="text" id="userAddress" class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-soriano-gold outline-none">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div>
+                            <h4 class="text-[10px] font-bold text-gray-500 uppercase tracking-widest border-b border-gray-800 pb-2 mb-4">Cuenta Bancaria (Para Pagos)</h4>
+                            <div class="grid grid-cols-3 gap-4">
+                                <div>
+                                    <label class="block text-[10px] text-gray-400 mb-1.5 uppercase font-bold">Banco / App</label>
+                                    <input type="text" id="userBank" class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-soriano-gold outline-none" placeholder="Ej. Bancolombia">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] text-gray-400 mb-1.5 uppercase font-bold">Tipo Cuenta</label>
+                                    <select id="userAccType" class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white focus:border-soriano-gold outline-none appearance-none">
+                                        <option value="Ahorros">Ahorros</option>
+                                        <option value="Corriente">Corriente</option>
+                                        <option value="Nequi">Nequi / Daviplata</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] text-gray-400 mb-1.5 uppercase font-bold">N° Cuenta</label>
+                                    <input type="text" id="userAccNumber" class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-2 text-sm text-white font-mono focus:border-soriano-gold outline-none">
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="bg-gray-900/40 p-5 rounded-xl border border-gray-800 relative">
+                            <div class="flex justify-between items-start mb-4 border-b border-gray-800 pb-2">
+                                <div>
+                                    <h4 class="text-[10px] font-bold text-green-500 uppercase tracking-widest">Configuración de Nómina</h4>
+                                    <button type="button" onclick="autoFillMinimumWage()" class="text-[9px] bg-blue-900/30 text-blue-400 border border-blue-900 px-2 py-1 rounded mt-2 hover:bg-blue-900/50 transition font-bold uppercase tracking-widest shadow-lg">
+                                        <i class="fas fa-magic mr-1"></i> Asignar SMLV Oficial
+                                    </button>
+                                </div>
+                                <div class="text-[9px] text-gray-400 font-mono text-right bg-black/50 p-2 rounded border border-gray-800">
+                                    Valores Legales (2026)<br>
+                                    SMLV: <span id="smlvDisplay" class="text-white font-bold">-</span><br>
+                                    Aux. Transp: <span id="auxTransDisplay" class="text-white font-bold">-</span>
+                                </div>
+                            </div>
+
+                            <div class="grid grid-cols-2 gap-4 mb-4">
+                                <div>
+                                    <label class="block text-[10px] text-gray-400 mb-1.5 uppercase font-bold">Salario Base ($)</label>
+                                    <input type="text" id="userSalary" class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-2.5 text-base font-bold text-white font-mono focus:border-green-500 outline-none" placeholder="0" oninput="formatCurrencyInput(this); calculatePayroll();">
+                                </div>
+                                <div>
+                                    <label class="block text-[10px] text-gray-400 mb-1.5 uppercase font-bold">Aux. Transporte ($)</label>
+                                    <input type="text" id="userTransport" class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-2.5 text-base font-bold text-white font-mono focus:border-green-500 outline-none" placeholder="0" oninput="formatCurrencyInput(this); calculatePayroll();">
+                                </div>
+                            </div>
+
+                            <div class="space-y-3 bg-[#0f0f10] p-4 rounded-lg border border-gray-800">
+                                <div class="flex items-center gap-3">
+                                    <input type="checkbox" id="userApplySS" class="w-4 h-4 text-soriano-red bg-gray-900 border-gray-700 rounded focus:ring-0 cursor-pointer" onchange="calculatePayroll()">
+                                    <label for="userApplySS" class="text-xs text-gray-300 font-bold uppercase tracking-wide cursor-pointer">Descontar Seguridad Social</label>
+                                </div>
+                                <div id="ssOptions" class="pl-7 hidden opacity-50 transition-opacity duration-300">
+                                    <div class="flex items-center gap-3">
+                                        <input type="checkbox" id="userSSOnMin" class="w-3.5 h-3.5 text-blue-500 bg-gray-900 border-gray-700 rounded focus:ring-0 cursor-pointer" onchange="calculatePayroll()">
+                                        <label for="userSSOnMin" class="text-[10px] text-gray-400 uppercase cursor-pointer">Calcular 4% Salud y 4% Pensión <strong class="text-white">sobre el Salario Mínimo Legal</strong></label>
+                                    </div>
+                                    
+                                    <div class="mt-3 grid grid-cols-2 gap-4 text-[10px] font-mono border-t border-gray-800 pt-3">
+                                        <div class="text-red-400">EPS Trabajador (4%): <span id="calcSalud" class="font-bold text-base">-$0</span></div>
+                                        <div class="text-red-400">Pensión Trabajador (4%): <span id="calcPension" class="font-bold text-base">-$0</span></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </form>
+
+            <div class="p-5 border-t border-gray-800 bg-[#18181b] rounded-b-2xl flex justify-between items-center">
+                <div class="text-xs text-gray-500" id="modalStatusDisplay"></div>
+                <div class="flex gap-3">
+                    <button onclick="closeProfileModal()" class="px-6 py-2.5 rounded-lg text-gray-400 hover:text-white hover:bg-gray-800 text-sm font-medium transition">Cancelar</button>
+                    <button id="saveProfileBtn" onclick="document.getElementById('userProfileForm').requestSubmit()" class="btn-primary shadow-lg shadow-purple-900/20 px-8 py-2.5 rounded-lg text-sm font-bold flex items-center bg-purple-600 text-white hover:bg-purple-500 transition">
+                        Guardar Ficha
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="suspendModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-[60] backdrop-blur-sm p-4">
+        <div class="bg-[#121214] border border-red-900/50 rounded-xl max-w-sm w-full shadow-2xl p-6 text-center">
+            <div class="w-16 h-16 bg-red-900/20 text-red-500 rounded-full flex items-center justify-center text-3xl mx-auto mb-4 border border-red-900/50">
+                <i class="fas fa-user-slash"></i>
+            </div>
+            <h3 class="text-lg font-serif text-white mb-2">Suspender Acceso</h3>
+            <p class="text-gray-400 text-sm mb-6" id="suspendDesc">¿Bloquear a este usuario?</p>
+            <div class="flex gap-3">
+                <button onclick="document.getElementById('suspendModal').classList.add('hidden'); document.getElementById('suspendModal').classList.remove('flex');" class="flex-1 px-4 py-2.5 rounded-lg text-gray-400 bg-gray-800 hover:text-white text-sm font-medium transition">Cancelar</button>
+                <button id="confirmSuspendBtn" class="flex-1 px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white rounded-lg text-sm font-bold shadow-lg shadow-red-900/20 transition">Suspender</button>
             </div>
         </div>
     </div>
 
     <script type="module">
         import { initAdminLayout } from '../js/global-components.js';
-        
-        // 1. Iniciar Layout (Esto crea el sidebar)
         initAdminLayout('usuarios'); 
-
-        // 2. Cargar lógica de la página (Esto busca la tabla y los filtros)
         import './usuarios.js'; 
     </script>
 </body>

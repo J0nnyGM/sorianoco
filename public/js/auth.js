@@ -23,7 +23,7 @@ loginForm.addEventListener('submit', async (e) => {
     const password = passwordInput.value;
 
     try {
-        // 1. Autenticar credenciales (Email/Pass)
+        // 1. Autenticar credenciales
         const userCredential = await signInWithEmailAndPassword(auth, email, password);
         const user = userCredential.user;
         
@@ -32,7 +32,6 @@ loginForm.addEventListener('submit', async (e) => {
         const userDoc = await getDoc(userDocRef);
 
         if (!userDoc.exists()) {
-            // Caso raro: Usuario existe en Auth pero no en Firestore (ej. creado manualmente en consola sin datos)
             await signOut(auth);
             throw new Error("USER_NO_DATA");
         }
@@ -41,7 +40,7 @@ loginForm.addEventListener('submit', async (e) => {
 
         // 3. Bloqueo de seguridad según estado
         if (userData.status === 'pending') {
-            await signOut(auth); // Expulsar inmediatamente
+            await signOut(auth); 
             throw new Error("ACCOUNT_PENDING");
         }
 
@@ -50,18 +49,24 @@ loginForm.addEventListener('submit', async (e) => {
             throw new Error("ACCOUNT_SUSPENDED");
         }
 
-        // 4. Si llegamos aquí, está ACTIVO. Redirigir.
-        console.log("Acceso concedido:", userData.role);
+        // 4. REDIRECCIÓN INTELIGENTE SEGÚN EL ROL
+        console.log("Acceso concedido. Rol:", userData.role);
         
-        // Opcional: Redirigir según rol
-        // if (userData.role === 'admin') window.location.href = '../admin/dashboard.html';
-        window.location.href = '../admin/index.html';
+        if (userData.role === 'admin') {
+            window.location.href = '../admin/index.html'; // Dashboard financiero (Admin)
+        } else if (userData.role === 'contabilidad') {
+            window.location.href = '../admin/gastos.html'; // Contadores van directo a Gastos
+        } else if (userData.role === 'vendedor') {
+            window.location.href = '../admin/ordenes.html'; // Vendedores van directo a sus Órdenes
+        } else {
+            // Fallback por seguridad
+            window.location.href = '../admin/ordenes.html'; 
+        }
 
     } catch (error) {
         console.error("Error login:", error.code || error.message);
         let msg = "Credenciales incorrectas.";
         
-        // Manejo de errores personalizados
         if (error.message === "ACCOUNT_PENDING") {
             msg = "Tu cuenta está pendiente de aprobación por un administrador.";
         } else if (error.message === "ACCOUNT_SUSPENDED") {
@@ -69,7 +74,6 @@ loginForm.addEventListener('submit', async (e) => {
         } else if (error.message === "USER_NO_DATA") {
             msg = "Error de integridad: Usuario sin perfil de datos.";
         } 
-        // Errores de Firebase
         else if (error.code === 'auth/too-many-requests') {
             msg = "Demasiados intentos. Espera unos minutos.";
         } else if (error.code === 'auth/user-not-found' || error.code === 'auth/wrong-password' || error.code === 'auth/invalid-credential') {

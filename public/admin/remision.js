@@ -11,9 +11,14 @@ const elClientName = document.getElementById('clientName');
 const elClientId = document.getElementById('clientIdNum');
 const elClientAddress = document.getElementById('clientAddress');
 const elClientPhone = document.getElementById('clientPhone');
-const tbody = document.querySelector('tbody'); // Para insertar filas
-const tfoot = document.querySelector('tfoot'); // Para totales
+const itemsBody = document.getElementById('itemsBody');
+const totalsFooter = document.getElementById('totalsFooter');
 const elNotes = document.getElementById('orderNotes');
+const elSignature = document.getElementById('authSignature');
+
+// Secciones de Garantía
+const sectionCustom = document.getElementById('warrantyCustom');
+const sectionFinished = document.getElementById('warrantyFinished');
 
 const cop = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 
@@ -33,64 +38,96 @@ async function loadData() {
         elDate.textContent = `Fecha: ${dateObj.toLocaleDateString('es-CO')}`;
         elNotes.textContent = order.notes || "Sin observaciones adicionales.";
 
+        // --- FIRMA DINÁMICA ---
+        const respName = order.responsableName || "Soriano Admin";
+        const nameParts = respName.trim().split(' ');
+        let signatureText = respName;
+        if (nameParts.length >= 2) {
+            const firstName = nameParts[0];
+            const lastNameInitial = nameParts[nameParts.length - 1].charAt(0);
+            signatureText = `${firstName} ${lastNameInitial}.`;
+        }
+        elSignature.textContent = signatureText;
+
         // 2. Cliente
-        elClientName.textContent = order.clientName;
+        elClientName.textContent = order.clientName || "Cliente Mostrador";
         if (order.clientId) {
-            const clientSnap = await getDoc(doc(db, "clients", order.clientId));
-            if (clientSnap.exists()) {
-                const c = clientSnap.data();
-                elClientId.textContent = `ID: ${c.idNum || '-'}`;
-                elClientAddress.textContent = `Dir: ${c.address || '-'}`;
-                elClientPhone.textContent = `Tel: ${c.phone || '-'}`;
-            }
+            try {
+                const clientSnap = await getDoc(doc(db, "clients", order.clientId));
+                if (clientSnap.exists()) {
+                    const c = clientSnap.data();
+                    elClientId.textContent = c.idNum ? `ID: ${c.idNum}` : '';
+                    elClientAddress.textContent = c.address ? `Dir: ${c.address}` : '';
+                    elClientPhone.textContent = c.phone ? `Tel: ${c.phone}` : '';
+                }
+            } catch (e) { console.log("Info cliente base"); }
         }
 
-        // 3. Tabla de Ítems (Prendas)
+        // 3. Tabla de Ítems e Identificación de Tipos
         let rowsHtml = '';
+        let hasCustomItems = false;   // Bandera: ¿Hay hechos a medida?
+        let hasFinishedItems = false; // Bandera: ¿Hay productos terminados?
+
         if (order.items && order.items.length > 0) {
-            rowsHtml = order.items.map(item => `
-                <tr class="border-b border-gray-200">
-                    <td class="py-4">
-                        <p class="font-bold text-gray-800 text-lg">${item.description}</p>
-                        <p class="text-sm text-gray-500">${item.size !== 'N/A' ? 'Talla: ' + item.size : ''} ${item.notes ? '- ' + item.notes : ''}</p>
+            rowsHtml = order.items.map(item => {
+                // LÓGICA INTELIGENTE DE DETECCIÓN
+                if (item.inventoryId) {
+                    hasFinishedItems = true; // Tiene ID de inventario -> Producto Terminado
+                } else {
+                    hasCustomItems = true;   // No tiene ID -> A Medida
+                }
+
+                return `
+                <tr class="border-b border-gray-200 text-sm">
+                    <td class="py-4 pr-4">
+                        <p class="font-bold text-gray-800 text-base">${item.description}</p>
+                        <p class="text-xs text-gray-500 mt-0.5">
+                            ${item.size && item.size !== 'N/A' ? `<span class="bg-gray-200 px-1.5 rounded text-black font-bold mr-1">${item.size}</span>` : ''} 
+                            ${item.notes || ''}
+                        </p>
                     </td>
-                    <td class="py-4 text-right">${item.quantity}</td>
-                    <td class="py-4 text-right font-medium">${cop.format(item.totalPrice)}</td>
-                </tr>
-            `).join('');
+                    <td class="py-4 text-right align-top">${item.quantity}</td>
+                    <td class="py-4 text-right font-medium align-top">${cop.format(item.totalPrice)}</td>
+                </tr>`;
+            }).join('');
         } else {
-            // Soporte legacy (si hay ordenes viejas)
-            rowsHtml = `<tr><td class="py-4">${order.garment || 'Prenda'}</td><td class="py-4 text-right">1</td><td class="py-4 text-right">${cop.format(order.totalAmount)}</td></tr>`;
+            rowsHtml = `<tr><td class="py-4">Prenda General</td><td class="py-4 text-right">1</td><td class="py-4 text-right">${cop.format(order.totalAmount)}</td></tr>`;
         }
-        tbody.innerHTML = rowsHtml;
+        itemsBody.innerHTML = rowsHtml;
 
-        // 4. Totales Financieros
+        // 4. Mostrar Garantías Correspondientes
+        // Revisamos también si hay medidas aplicadas en la orden (refuerzo para 'custom')
+        if (order.appliedMeasures && Object.keys(order.appliedMeasures).length > 0) {
+            hasCustomItems = true;
+        }
+
+        if (hasCustomItems) sectionCustom.classList.remove('hidden');
+        if (hasFinishedItems) sectionFinished.classList.remove('hidden');
+
+        // 5. Totales Financieros
         const total = order.totalAmount || 0;
-        const advance = order.advancePayment || 0;
-        const balance = order.balanceDue || 0; // Si es 0, está a paz y salvo
+        const balance = order.balanceDue || 0;
+        const paidAmount = total - balance;
 
-        tfoot.innerHTML = `
+        totalsFooter.innerHTML = `
             <tr>
-                <td colspan="2" class="pt-4 text-right font-bold text-gray-500 uppercase text-xs">Valor Total</td>
-                <td class="pt-4 text-right font-bold text-xl text-black">${cop.format(total)}</td>
+                <td colspan="2" class="pt-6 text-right font-bold text-gray-500 uppercase text-xs">Valor Total Orden</td>
+                <td class="pt-6 text-right font-bold text-lg text-black">${cop.format(total)}</td>
             </tr>
             <tr>
-                <td colspan="2" class="text-right font-medium text-gray-500 text-xs">Anticipos / Abonos</td>
-                <td class="text-right text-gray-600">- ${cop.format(total - balance)}</td>
+                <td colspan="2" class="text-right font-medium text-gray-500 text-xs pb-2">Total Recibido (Abonos)</td>
+                <td class="text-right text-gray-600 pb-2 border-b border-gray-300">- ${cop.format(paidAmount)}</td>
             </tr>
-            <tr class="border-t border-black">
-                <td colspan="2" class="pt-2 text-right font-bold text-black uppercase text-sm">Saldo Pendiente</td>
-                <td class="pt-2 text-right font-bold text-2xl ${balance > 0 ? 'text-red-600' : 'text-green-600'}">
+            <tr>
+                <td colspan="2" class="pt-3 text-right font-bold text-black uppercase text-sm">Saldo Pendiente</td>
+                <td class="pt-3 text-right font-bold text-xl ${balance > 0 ? 'text-red-600' : 'text-green-600'}">
                     ${balance > 0 ? cop.format(balance) : 'PAGADO'}
                 </td>
             </tr>
         `;
 
-        // Auto print (opcional)
-        // setTimeout(() => window.print(), 800);
-
     } catch (error) {
         console.error(error);
-        alert("Error: " + error);
+        alert("Error generando remisión: " + error);
     }
 }

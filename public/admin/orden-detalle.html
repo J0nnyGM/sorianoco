@@ -8,9 +8,28 @@
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
     <link rel="icon" href="data:,">
     <style>
-        /* Ajuste para input number */
+        /* Ajuste para input number (ocultar flechas) */
         input[type=number]::-webkit-inner-spin-button, 
         input[type=number]::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+        
+        /* Scrollbar personalizada */
+        .custom-scrollbar::-webkit-scrollbar { width: 6px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #18181b; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #3f3f46; border-radius: 3px; }
+        
+        /* Resultados del buscador */
+        .dropdown-results {
+            position: absolute;
+            width: 100%;
+            max-height: 160px;
+            overflow-y: auto;
+            background-color: #18181b;
+            border: 1px solid #374151;
+            border-radius: 0.5rem;
+            z-index: 100;
+            margin-top: 4px;
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.5);
+        }
     </style>
 </head>
 <body class="bg-soriano-dark text-gray-300 font-sans antialiased">
@@ -86,7 +105,7 @@
                     <div class="bg-black/40 border border-gray-800 rounded-lg overflow-hidden shadow-lg">
                         <div class="p-4 border-b border-gray-800 bg-gray-900/50 flex justify-between items-center">
                             <h3 class="text-sm font-bold text-gray-300 uppercase"><i class="fas fa-cut mr-2 text-blue-400"></i> Materiales Usados</h3>
-                            <button onclick="openMaterialModal()" class="btn-outline text-[10px] py-1 px-3 border-gray-600 text-gray-400 hover:text-white hover:border-white uppercase font-bold transition">
+                            <button onclick="openAddMatModal()" class="btn-outline text-[10px] py-1 px-3 border-gray-600 text-gray-400 hover:text-white hover:border-white uppercase font-bold transition">
                                 <i class="fas fa-plus mr-1"></i> Agregar Material
                             </button>
                         </div>
@@ -95,8 +114,8 @@
                                 <tr>
                                     <th class="px-6 py-3">Material</th>
                                     <th class="px-6 py-3 text-right">Cantidad</th>
-                                    <th class="px-6 py-3 text-right">Costo Estimado</th>
-                                    <th class="px-6 py-3 w-10"></th>
+                                    <th class="px-6 py-3 text-right">Costo Unit.</th>
+                                    <th class="px-6 py-3 text-right">Subtotal</th>
                                 </tr>
                             </thead>
                             <tbody id="materialsList" class="divide-y divide-gray-800 text-gray-400">
@@ -104,9 +123,8 @@
                             </tbody>
                             <tfoot class="bg-gray-900/30 text-gray-400 font-mono text-xs border-t border-gray-800">
                                 <tr>
-                                    <td colspan="2" class="px-6 py-3 text-right uppercase font-bold text-gray-500">Costo Total Producción:</td>
+                                    <td colspan="3" class="px-6 py-3 text-right uppercase font-bold text-gray-500">Costo Total Producción:</td>
                                     <td class="px-6 py-3 text-right text-white font-bold" id="totalProductionCost">$0</td>
-                                    <td></td>
                                 </tr>
                             </tfoot>
                         </table>
@@ -166,65 +184,46 @@
         </main>
     </div>
 
-    <div id="addMaterialModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-50 backdrop-blur-sm p-4">
-        <div class="bg-[#121214] border border-gray-700 rounded-xl max-w-md w-full shadow-2xl relative overflow-visible flex flex-col max-h-[90vh]">
+<div id="addMaterialModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-[80] backdrop-blur-sm p-4">
+        <div class="bg-[#121214] border border-gray-700 rounded-2xl w-full max-w-md shadow-2xl relative">
             
-            <div class="p-5 border-b border-gray-800 bg-[#18181b] rounded-t-xl flex justify-between items-center flex-shrink-0">
-                <h3 class="text-lg font-serif text-white">Agregar Material</h3>
-                <button onclick="closeMaterialModal()" class="text-gray-500 hover:text-white"><i class="fas fa-times"></i></button>
+            <div class="p-5 border-b border-gray-800 flex justify-between items-center">
+                <h3 class="text-white font-serif text-lg">Agregar Material</h3>
+                <button onclick="window.closeAddMatModal()" class="text-gray-400 hover:text-white transition"><i class="fas fa-times"></i></button>
             </div>
 
-            <form id="addMaterialForm" class="p-6 space-y-5 overflow-y-auto custom-scrollbar">
+            <form id="addMaterialForm" class="p-6 space-y-5">
                 
                 <div class="relative">
-                    <label class="block text-xs text-gray-400 mb-1.5 uppercase font-bold">Buscar Material</label>
-                    
-                    <div class="relative" id="searchContainer">
-                        <i class="fas fa-search absolute left-3 top-3 text-gray-500"></i>
-                        <input type="text" id="materialSearch" 
-                            class="w-full bg-black border border-gray-600 text-white text-sm rounded-lg pl-9 pr-3 py-2.5 focus:border-soriano-gold outline-none placeholder-gray-600 transition" 
-                            placeholder="Escribe para buscar..." 
-                            autocomplete="off">
-                    </div>
-                    
-                    <div id="materialResults" class="hidden absolute top-full left-0 w-full bg-[#18181b] border border-gray-600 rounded-b-lg mt-1 shadow-2xl max-h-60 overflow-y-auto custom-scrollbar z-50">
-                        </div>
-                    
-                    <input type="hidden" id="selectedMaterialId">
-                    <div id="selectedMaterialDisplay" class="hidden mt-3 p-3 bg-gray-800/50 border border-gray-700 rounded-lg flex items-center gap-4 relative">
+                    <label class="block text-xs text-gray-400 mb-1.5 uppercase font-bold tracking-wider">Buscar Material</label>
+                    <div class="relative">
+                        <i class="fas fa-search absolute left-3 top-3 text-gray-500 text-xs"></i>
+                        <input type="text" id="materialSearch" class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg pl-9 pr-4 py-2.5 text-sm text-white focus:border-soriano-gold outline-none placeholder-gray-600 transition" placeholder="Ej. Tela, Botón..." autocomplete="off">
                         
-                        <div class="w-16 h-16 bg-black rounded border border-gray-600 flex-shrink-0 overflow-hidden flex items-center justify-center">
-                            <img id="selectedMaterialImage" src="" class="w-full h-full object-cover hidden">
-                            <i id="selectedMaterialIcon" class="fas fa-image text-gray-600 text-xl"></i>
-                        </div>
-
-                        <div class="flex-1 min-w-0">
-                            <p class="text-[10px] text-gray-400 uppercase tracking-wider mb-0.5">Seleccionado:</p>
-                            <span id="selectedMaterialName" class="font-bold text-white text-sm block truncate"></span>
-                            <span id="selectedStockDisplay" class="text-xs text-soriano-gold block mt-0.5">Stock: -</span>
-                        </div>
-
-                        <button type="button" onclick="clearMaterialSelection()" class="absolute top-2 right-2 text-gray-500 hover:text-red-400 transition">
-                            <i class="fas fa-times"></i>
-                        </button>
+                        <input type="hidden" id="selectedMaterialId">
+                        <input type="hidden" id="selectedMaterialCost">
                     </div>
+                    
+                    <div id="materialResults" class="absolute w-full bg-[#18181b] border border-gray-700 rounded-lg mt-1 max-h-40 overflow-y-auto z-50 hidden shadow-2xl custom-scrollbar"></div>
                 </div>
 
                 <div class="grid grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-xs text-gray-400 mb-1.5 uppercase font-bold">Cantidad a Usar</label>
-                        <input type="number" id="useQty" required step="0.01" min="0.01" class="w-full bg-black border border-gray-600 text-white text-sm rounded-lg p-2.5 focus:border-white outline-none text-center font-bold" placeholder="0">
+                        <div class="flex justify-between items-center mb-1.5">
+                            <label class="text-xs text-gray-400 uppercase font-bold tracking-wider">Cantidad</label>
+                            <span id="stockDisplay" class="text-[10px] text-green-500 font-mono font-bold"></span>
+                        </div>
+                        <input type="number" id="addMatQty" step="0.01" class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-2.5 text-white focus:border-soriano-gold outline-none font-bold placeholder-gray-700" placeholder="0">
                     </div>
                     <div>
-                        <label class="block text-xs text-gray-400 mb-1.5 uppercase font-bold">Unidad</label>
-                        <input type="text" id="useUnit" disabled class="w-full bg-[#18181b] border border-gray-700 text-gray-500 text-sm rounded-lg p-2.5 text-center font-mono" placeholder="-">
+                        <label class="block text-xs text-gray-400 mb-1.5 uppercase font-bold tracking-wider">Costo Unit.</label>
+                        <input type="text" id="addMatCost" class="w-full bg-[#0f0f10] border border-gray-700 rounded-lg px-3 py-2.5 text-gray-500 focus:border-soriano-gold outline-none cursor-not-allowed font-mono text-sm" readonly>
                     </div>
                 </div>
-                
-                <div class="pt-4 flex justify-end gap-3 border-t border-gray-800 mt-2">
-                    <button type="button" onclick="closeMaterialModal()" class="px-4 py-2 text-gray-400 hover:text-white text-sm">Cancelar</button>
-                    <button type="submit" class="bg-white text-black hover:bg-gray-200 font-bold px-6 py-2 rounded-lg text-sm transition shadow-lg flex items-center gap-2">
-                        <i class="fas fa-check"></i> Confirmar
+
+                <div class="pt-2 flex justify-end">
+                    <button type="submit" class="btn-primary shadow-lg shadow-green-900/20 px-6 py-2.5 rounded-lg text-sm font-bold flex items-center transition hover:scale-105">
+                        <i class="fas fa-plus mr-2"></i> Agregar
                     </button>
                 </div>
             </form>

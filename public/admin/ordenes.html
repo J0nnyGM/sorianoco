@@ -54,10 +54,14 @@
 
                 <div class="flex flex-col md:flex-row justify-between items-end md:items-center gap-4 border-b border-gray-800 pb-4">
                     <div class="flex space-x-2 overflow-x-auto w-full md:w-auto no-scrollbar" id="statusTabs">
-                        <button onclick="filterByStatus('recibido')" class="status-tab active px-4 py-2 rounded-full text-xs font-bold uppercase transition bg-gray-800 text-white border border-gray-600" data-status="recibido">Recibido</button>
+                        <button onclick="filterByStatus('todas')" class="status-tab active px-4 py-2 rounded-full text-xs font-bold uppercase transition bg-gray-800 text-white border border-gray-600" data-status="todas">Todas</button>
+                        
+                        <button onclick="filterByStatus('recibido')" class="status-tab px-4 py-2 rounded-full text-xs font-bold uppercase transition text-gray-500 hover:text-white" data-status="recibido">Recibido</button>
+                        
                         <button onclick="filterByStatus('en_proceso')" class="status-tab px-4 py-2 rounded-full text-xs font-bold uppercase transition text-gray-500 hover:text-white" data-status="en_proceso">En Proceso</button>
                         <button onclick="filterByStatus('procesado')" class="status-tab px-4 py-2 rounded-full text-xs font-bold uppercase transition text-gray-500 hover:text-white" data-status="procesado">Procesado</button>
                         <button onclick="filterByStatus('entregado')" class="status-tab px-4 py-2 rounded-full text-xs font-bold uppercase transition text-gray-500 hover:text-white" data-status="entregado">Entregado</button>
+                        <button onclick="filterByStatus('anulada')" class="status-tab px-4 py-2 rounded-full text-xs font-bold uppercase transition text-gray-500 hover:text-red-400" data-status="anulada">Anuladas</button>
                     </div>
                     <div class="relative w-full md:w-64">
                         <input type="text" id="searchInput" placeholder="Buscar Cliente o # Orden..." class="w-full bg-black border border-gray-700 rounded-full py-2 px-4 pl-10 text-sm focus:border-soriano-gold outline-none text-white">
@@ -107,203 +111,6 @@
         </main>
     </div>
 
-<div id="orderModal" class="fixed inset-0 bg-black/95 hidden items-center justify-center z-50 backdrop-blur-sm p-4 md:p-6 font-sans">
-    
-    <div class="bg-[#121214] border border-gray-800 rounded-2xl w-full max-w-7xl h-[95vh] flex flex-col shadow-2xl overflow-hidden relative">
-        
-        <div class="px-8 py-5 border-b border-gray-800 flex justify-between items-center bg-[#18181b]">
-            <div>
-                <h3 class="text-2xl font-serif text-white flex items-center gap-3">
-                    <span class="bg-soriano-red text-white w-8 h-8 rounded flex items-center justify-center text-sm shadow-lg shadow-red-900/50"><i class="fas fa-cut"></i></span>
-                    <span id="modalTitle">Nueva Orden</span>
-                </h3>
-                <p class="text-gray-500 text-xs mt-1 ml-11">Ingresa los datos del cliente y arma el pedido.</p>
-            </div>
-            <button onclick="closeModal()" class="text-gray-500 hover:text-white transition bg-gray-800 hover:bg-red-900 w-10 h-10 rounded-full flex items-center justify-center">
-                <i class="fas fa-times text-lg"></i>
-            </button>
-        </div>
-
-        <div class="flex-1 overflow-y-auto custom-scrollbar bg-[#0f0f10]">
-            <form id="orderForm" class="p-6 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
-                
-                <input type="hidden" id="orderId">
-                <input type="hidden" id="status" value="recibido">
-
-                <div class="lg:col-span-4 flex flex-col gap-6">
-                    
-                    <div class="bg-[#18181b] p-6 rounded-xl border border-gray-800 shadow-lg">
-                        <h4 class="text-xs font-bold text-soriano-red uppercase tracking-widest mb-4 flex items-center gap-2">
-                            <i class="fas fa-user-circle"></i> Datos del Cliente
-                        </h4>
-                        
-                        <div class="space-y-5">
-                            <div class="relative">
-                                <label class="block text-xs text-gray-400 mb-2 font-medium">Cliente</label>
-                                <select id="clientSelect" required class="w-full bg-[#0f0f10] border border-gray-700 text-white text-sm rounded-lg p-3 h-12 focus:border-soriano-red focus:ring-1 focus:ring-soriano-red outline-none transition-all">
-                                    <option value="">Seleccionar Cliente...</option>
-                                </select>
-                                <div id="clientInfoBox" class="hidden mt-2 bg-gray-800/50 border border-gray-700 p-2 rounded text-gray-300 text-xs flex items-center gap-2">
-                                    <i class="fas fa-phone-alt text-soriano-gold"></i> <span id="infoPhone">...</span>
-                                </div>
-                            </div>
-
-                            <div>
-                                <label class="block text-xs text-gray-400 mb-2 font-medium">Fecha de Entrega</label>
-                                <input type="date" id="deadline" required class="w-full bg-[#0f0f10] border border-gray-700 text-white text-sm rounded-lg p-3 h-12 focus:border-soriano-red outline-none text-center tracking-wide" style="color-scheme: dark;">
-                            </div>
-
-                            <div>
-                                <label class="block text-xs text-gray-400 mb-2 font-medium">Responsable Taller</label>
-                                <div class="relative">
-                                    <select id="responsableSelect" class="w-full bg-[#0f0f10] border border-gray-700 text-gray-300 text-sm rounded-lg p-3 h-12 appearance-none focus:border-soriano-red outline-none">
-                                        <option value="">Cargando...</option>
-                                    </select>
-                                    <i class="fas fa-user-tag absolute right-4 top-4 text-gray-500 text-xs pointer-events-none"></i>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="bg-[#18181b] p-6 rounded-xl border border-gray-800 shadow-lg flex-1">
-                        <div class="flex justify-between items-center mb-5 border-b border-gray-800 pb-3">
-                            <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest">
-                                <i class="fas fa-ruler-combined mr-2"></i> Medidas
-                            </h4>
-                            <div class="flex bg-black rounded p-1 gap-1" id="measureTabs">
-                                <button type="button" onclick="showMeasureTab('chaqueta')" class="measure-tab px-3 py-1 text-[10px] uppercase font-bold rounded transition text-white bg-gray-700 hover:bg-gray-600">Chaq</button>
-                                <button type="button" onclick="showMeasureTab('pantalon')" class="measure-tab px-3 py-1 text-[10px] uppercase font-bold rounded transition text-gray-500 hover:text-white hover:bg-gray-800">Pan</button>
-                                <button type="button" onclick="showMeasureTab('camisa')" class="measure-tab px-3 py-1 text-[10px] uppercase font-bold rounded transition text-gray-500 hover:text-white hover:bg-gray-800">Cam</button>
-                            </div>
-                        </div>
-
-                        <div id="measuresContainer" class="grid grid-cols-2 md:grid-cols-3 gap-3 content-start">
-                            <p class="text-xs text-gray-500 col-span-full text-center py-8 italic border border-dashed border-gray-800 rounded">
-                                Seleccione cliente para ver medidas
-                            </p>
-                        </div>
-                    </div>
-
-                </div>
-
-                <div class="lg:col-span-8 flex flex-col h-full gap-6">
-
-                    <div class="bg-[#18181b] p-6 rounded-xl border border-gray-700 shadow-xl relative overflow-visible">
-                        <div class="grid grid-cols-1 md:grid-cols-12 gap-4 items-end">
-                            
-                            <div class="md:col-span-6 relative z-20">
-                                <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1 ml-1">Buscar Prenda o Tela</label>
-                                <div class="relative">
-                                    <i class="fas fa-search absolute left-4 top-3.5 text-gray-400"></i>
-                                    <input type="text" id="inventorySearch" class="w-full pl-11 pr-4 py-3 bg-[#0f0f10] border border-gray-600 rounded-lg text-white text-sm focus:border-white transition placeholder-gray-600 outline-none shadow-inner" placeholder="Buscar..." autocomplete="off">
-                                </div>
-                                <input type="hidden" id="selectedInventoryId">
-                                <div id="inventoryList" class="hidden absolute top-full left-0 w-full bg-[#202024] border border-gray-600 rounded-lg mt-2 shadow-2xl max-h-60 overflow-y-auto custom-scrollbar"></div>
-                            </div>
-
-                            <div class="md:col-span-3 z-10">
-                                <label class="block text-[10px] text-gray-500 uppercase font-bold mb-1 ml-1">Precio Unit.</label>
-                                <input type="text" id="addItemPrice" class="w-full px-4 py-3 bg-[#0f0f10] border border-gray-600 rounded-lg text-green-400 font-mono font-bold text-sm text-right focus:border-green-500 outline-none" placeholder="$0" oninput="formatCurrencyInput(this)">
-                            </div>
-
-                            <div class="md:col-span-3 z-10">
-                                <label class="block text-[10px] text-transparent mb-1">.</label>
-                                <button type="button" onclick="addItemToOrder()" class="w-full bg-white hover:bg-gray-200 text-black font-bold py-3 rounded-lg shadow-lg transition uppercase text-xs flex items-center justify-center gap-2 h-[46px]">
-                                    <i class="fas fa-plus"></i> Añadir
-                                </button>
-                            </div>
-
-                            <div class="md:col-span-12 grid grid-cols-1 md:grid-cols-12 gap-3 mt-1 items-center z-10">
-                                
-                                <div class="md:col-span-4">
-                                    <input type="text" id="addItemDesc" class="w-full px-3 py-2 bg-transparent border-b border-gray-700 text-gray-300 text-sm focus:border-soriano-gold outline-none placeholder-gray-600" placeholder="Descripción (Ej. Traje)...">
-                                </div>
-
-                                <div class="md:col-span-3">
-                                    <input type="text" id="addItemNotes" class="w-full px-3 py-2 bg-transparent border-b border-gray-700 text-soriano-gold text-xs italic focus:border-soriano-gold outline-none placeholder-gray-600" placeholder="Nota interna (Opcional)...">
-                                </div>
-                                
-                                <div class="md:col-span-2">
-                                    <div class="flex items-center bg-[#0f0f10] rounded border border-gray-700 h-9">
-                                        <button type="button" onclick="document.getElementById('addItemQty').stepDown()" class="px-2 text-gray-400 hover:text-white">-</button>
-                                        <input type="number" id="addItemQty" class="w-full bg-transparent text-center text-white text-sm font-bold h-full focus:outline-none appearance-none" value="1" min="1">
-                                        <button type="button" onclick="document.getElementById('addItemQty').stepUp()" class="px-2 text-gray-400 hover:text-white">+</button>
-                                    </div>
-                                </div>
-
-                                <div class="md:col-span-3 flex items-center justify-end gap-2" id="sizeSelectorContainer">
-                                    <div id="sizeButtons" class="flex flex-wrap gap-1 justify-end"></div>
-                                    <input type="hidden" id="selectedSize">
-                                </div>
-                            </div>
-                        </div>
-
-                        <div id="productImagePreview" class="hidden absolute -right-4 -top-4 p-1 bg-black rounded border border-gray-800 shadow-xl z-50">
-                            <img id="imgPreviewSrc" src="" class="h-20 w-20 object-cover rounded">
-                        </div>
-                    </div>
-
-                    <div class="flex-1 bg-[#18181b] rounded-xl border border-gray-800 overflow-hidden flex flex-col shadow-lg">
-                        <div class="overflow-x-auto flex-1 custom-scrollbar">
-                            <table class="w-full text-left text-sm">
-                                <thead class="bg-black/50 text-gray-500 uppercase text-[10px] tracking-wider font-bold border-b border-gray-800">
-                                    <tr>
-                                        <th class="px-4 py-3 text-center w-16">Cant</th>
-                                        <th class="px-4 py-3">Descripción</th>
-                                        <th class="px-4 py-3 w-24 text-center">Talla</th>
-                                        <th class="px-4 py-3 text-right">Precio</th>
-                                        <th class="px-4 py-3 text-right">Total</th>
-                                        <th class="px-4 py-3 w-10"></th>
-                                    </tr>
-                                </thead>
-                                <tbody id="orderItemsBody" class="divide-y divide-gray-800 text-gray-300">
-                                    </tbody>
-                            </table>
-                        </div>
-                        
-                        <div class="bg-[#0f0f10] p-4 border-t border-gray-800 flex justify-between items-center">
-                            <div class="text-xs text-gray-500 italic flex items-center gap-2">
-                                <i class="fas fa-info-circle"></i>
-                                Verifica los ítems antes de guardar.
-                            </div>
-                            <div class="flex items-center gap-4">
-                                <span class="text-sm text-gray-400 uppercase font-bold tracking-widest">Total Orden</span>
-                                <span class="text-3xl font-serif text-soriano-gold" id="orderTotalDisplay">$0</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                        <div class="bg-[#18181b] p-4 rounded-xl border border-gray-800">
-                            <label class="block text-xs text-gray-500 mb-2 uppercase font-bold">Observaciones</label>
-                            <textarea id="orderNotes" rows="2" class="w-full bg-[#0f0f10] border border-gray-700 text-gray-300 text-sm rounded-lg p-3 resize-none focus:border-gray-500 outline-none" placeholder="Instrucciones internas..."></textarea>
-                        </div>
-
-                        <div class="bg-gradient-to-br from-gray-900 to-[#18181b] p-4 rounded-xl border border-gray-700">
-                            <div class="flex justify-between items-center mb-2">
-                                <label class="text-xs text-green-500 uppercase font-bold"><i class="fas fa-money-bill-wave mr-1"></i> Anticipo</label>
-                                <select id="targetAccount" class="bg-[#0f0f10] border border-gray-600 text-gray-400 text-[10px] rounded px-2 py-1 outline-none h-7 w-40">
-                                    <option value="">Cuenta Destino...</option>
-                                </select>
-                            </div>
-                            <input type="text" id="advancePayment" class="w-full bg-transparent border-b border-gray-600 text-white text-xl font-bold p-1 focus:border-green-500 outline-none text-right placeholder-gray-700" placeholder="$0" oninput="formatCurrencyInput(this)">
-                        </div>
-                    </div>
-
-                </div>
-            </form>
-        </div>
-
-        <div class="p-5 border-t border-gray-800 bg-[#18181b] flex justify-between items-center z-30 shadow-2xl">
-            <button type="button" onclick="closeModal()" class="text-gray-400 hover:text-white text-sm font-medium px-4 py-2 hover:bg-gray-800 rounded transition">
-                Cancelar
-            </button>
-            <button type="button" onclick="saveOrder()" class="btn-primary flex items-center gap-2 shadow-lg shadow-red-900/30">
-                <i class="fas fa-save"></i> Generar Orden
-            </button>
-        </div>
-    </div>
-</div>
 
     <div id="payModal" class="fixed inset-0 bg-black/90 hidden items-center justify-center z-[60] backdrop-blur-sm p-4">
         <div class="bg-gray-900 border border-gray-700 rounded-lg max-w-sm w-full shadow-2xl">

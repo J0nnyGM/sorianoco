@@ -18,6 +18,7 @@ const orderStatusBadge = document.getElementById('orderStatusBadge');
 const clientInfo = document.getElementById('clientInfo');
 const statusSelect = document.getElementById('statusSelect');
 const updateStatusBtn = document.getElementById('updateStatusBtn');
+const stockDisplay = document.getElementById('stockDisplay'); // NUEVA REFERENCIA
 
 // Paneles
 const itemsList = document.getElementById('itemsList');
@@ -37,19 +38,19 @@ const paymentHistoryList = document.getElementById('paymentHistoryList');
 const dateDeadline = document.getElementById('dateDeadline');
 const responsableName = document.getElementById('responsableName');
 
-// Modal Material (BUSCADOR)
+// --- MODAL MATERIALES (BUSCADOR) ---
 const materialModal = document.getElementById('addMaterialModal');
-const materialSearch = document.getElementById('materialSearch');
-const materialResults = document.getElementById('materialResults');
-const selectedMaterialId = document.getElementById('selectedMaterialId');
-const selectedMaterialDisplay = document.getElementById('selectedMaterialDisplay');
-const selectedMaterialName = document.getElementById('selectedMaterialName');
-const useQtyInput = document.getElementById('useQty');
-const useUnitInput = document.getElementById('useUnit');
-const stockDisplay = document.getElementById('stockAvailableDisplay');
 const addMaterialForm = document.getElementById('addMaterialForm');
+const materialSearch = document.getElementById('materialSearch'); // Input visible
+const materialResults = document.getElementById('materialResults'); // Lista desplegable
 
-// Modal Pago
+// Campos del formulario de material
+const selectedMaterialId = document.getElementById('selectedMaterialId'); // ID OCULTO
+const selectedMaterialCost = document.getElementById('selectedMaterialCost'); // COSTO OCULTO
+const addMatQty = document.getElementById('addMatQty');
+const addMatCostDisplay = document.getElementById('addMatCost'); // Input visible read-only
+
+// --- MODAL PAGO ---
 const payModal = document.getElementById('payModal');
 const payForm = document.getElementById('payForm');
 const payAmount = document.getElementById('payAmount');
@@ -62,7 +63,7 @@ const orderId = urlParams.get('id');
 const cop = new Intl.NumberFormat('es-CO', { style: 'currency', currency: 'COP', maximumFractionDigits: 0 });
 
 let currentOrderData = null;
-let inventoryCache = []; // Cache local de materias primas
+let inventoryCache = []; 
 
 // --- 1. INICIALIZACIÓN ---
 onAuthStateChanged(auth, async (user) => {
@@ -73,12 +74,12 @@ onAuthStateChanged(auth, async (user) => {
 
     await Promise.all([
         loadOrderDetails(),
-        loadInventoryMaterials(),
+        loadInventoryMaterials(), // Cargar caché para el buscador
         loadAccountsForPayment()
     ]);
 });
 
-// --- 2. CARGAR ORDEN ---
+// --- 2. CARGAR DATOS DE LA ORDEN ---
 async function loadOrderDetails() {
     try {
         const docSnap = await getDoc(doc(db, "orders", orderId));
@@ -88,7 +89,7 @@ async function loadOrderDetails() {
         renderHeader(currentOrderData);
         renderItems(currentOrderData.items || []);
         renderMeasures(currentOrderData.appliedMeasures || {});
-        renderMaterials(currentOrderData.materials || []);
+        renderMaterials(currentOrderData.materials || []); 
         renderFinance(currentOrderData);
 
     } catch (e) { console.error("Error loading order:", e); }
@@ -110,7 +111,7 @@ function renderHeader(data) {
     }
 }
 
-// ITEMS DE VENTA
+// ITEMS DE VENTA (PRENDAS)
 function renderItems(items) {
     if (!items.length) {
         itemsList.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-gray-500 italic">No hay prendas registradas.</td></tr>`;
@@ -179,7 +180,7 @@ function renderMeasures(measures) {
     }
 }
 
-// MATERIALES (Lógica Costos)
+// MATERIALES USADOS (TABLA DE COSTOS)
 function renderMaterials(mats) {
     if (!mats.length) {
         materialsList.innerHTML = `<tr><td colspan="4" class="p-6 text-center text-xs text-gray-500 italic">No hay materiales registrados.</td></tr>`;
@@ -189,19 +190,26 @@ function renderMaterials(mats) {
     
     let totalCost = 0;
     materialsList.innerHTML = mats.map(m => {
-        const cost = m.qty * m.costPerUnit;
-        totalCost += cost;
+        const lineTotal = m.total || (m.qty * (m.cost || 0)); 
+        totalCost += lineTotal;
+        const unitCost = m.cost || 0;
+
+        // Detectar si es un servicio externo (satélite) o material de inventario
+        const isService = m.materialId && m.materialId.startsWith('ext-');
+
         return `
             <tr class="border-b border-gray-800/50 hover:bg-white/5 transition">
-                <td class="px-6 py-3 text-white font-medium text-sm">${m.name}</td>
-                <td class="px-6 py-3 text-right text-gray-400 text-xs font-mono">${m.qty} ${m.unit}</td>
-                <td class="px-6 py-3 text-right text-white font-mono text-sm">${cop.format(cost)}</td>
-                <td class="px-6 py-3 text-center">
-                    <button class="text-gray-600 hover:text-red-500 transition text-xs" title="Eliminar (No devuelve stock)" onclick="alert('Funcionalidad en desarrollo: Eliminar material')"><i class="fas fa-times"></i></button>
+                <td class="px-6 py-3 text-white font-medium text-sm">
+                    ${m.name}
+                    ${isService ? '<span class="ml-2 text-[9px] bg-blue-900/30 text-blue-400 px-1.5 py-0.5 rounded border border-blue-900">SERVICIO</span>' : ''}
                 </td>
+                <td class="px-6 py-3 text-right text-gray-400 text-xs font-mono">${m.qty} ${m.unit || 'und'}</td>
+                <td class="px-6 py-3 text-right text-gray-500 font-mono text-xs">${cop.format(unitCost)}</td>
+                <td class="px-6 py-3 text-right text-white font-mono text-sm">${cop.format(lineTotal)}</td>
             </tr>
         `;
     }).join('');
+    
     totalProductionCost.textContent = cop.format(totalCost);
 }
 
@@ -225,7 +233,6 @@ function renderFinance(data) {
     if (data.paymentHistory && data.paymentHistory.length > 0) {
         paymentHistoryList.innerHTML = data.paymentHistory.map(p => {
             const date = new Date(p.date).toLocaleDateString();
-            const typeLabel = p.type === 'advance' ? 'Anticipo' : 'Abono';
             return `
                 <li class="flex justify-between border-b border-gray-800 pb-1.5 items-center last:border-0">
                     <span class="text-[10px] uppercase font-bold text-gray-500 flex items-center gap-1.5">
@@ -240,17 +247,11 @@ function renderFinance(data) {
     }
 }
 
-// --- 3. LÓGICA DE MATERIALES (BUSCADOR VISUAL) ---
+// --- 3. LÓGICA DE MATERIALES (BUSCADOR Y GUARDADO) ---
 
-// A. Elementos UI Adicionales (Asegurarse de tenerlos)
-const selectedMaterialImage = document.getElementById('selectedMaterialImage');
-const selectedMaterialIcon = document.getElementById('selectedMaterialIcon');
-const selectedStockDisplay = document.getElementById('selectedStockDisplay'); // Nuevo elemento en HTML
-const searchContainer = document.getElementById('searchContainer');
-
-// B. Cargar Materias Primas en memoria
+// A. Cargar Inventario en Caché
 async function loadInventoryMaterials() {
-    const q = query(collection(db, "inventory"), where("classification", "==", "material")); // Asegúrate que sea 'material' o 'materia_prima' según tu DB
+    const q = query(collection(db, "inventory"), where("classification", "==", "material"));
     const snap = await getDocs(q);
     inventoryCache = [];
     snap.forEach(d => {
@@ -260,35 +261,42 @@ async function loadInventoryMaterials() {
     });
 }
 
-// C. Renderizar Resultados
-function renderSearchResults(items) {
-    materialResults.innerHTML = '';
+// B. Evento Input Buscador
+materialSearch.addEventListener('input', (e) => {
+    const term = e.target.value.toLowerCase();
     
+    // Si borra, limpiamos
+    if (term.length < 1) { 
+        materialResults.classList.add('hidden'); 
+        selectedMaterialId.value = ""; // Limpiar ID si borra texto
+        return; 
+    }
+
+    const filtered = inventoryCache.filter(i => 
+        i.name.toLowerCase().includes(term) || 
+        (i.sku && i.sku.toLowerCase().includes(term))
+    );
+
+    renderMaterialResults(filtered);
+});
+
+// C. Renderizar Resultados
+function renderMaterialResults(items) {
+    materialResults.innerHTML = '';
     if (items.length === 0) {
-        materialResults.innerHTML = `<div class="p-4 text-xs text-gray-500 text-center italic">No se encontraron materiales.</div>`;
+        materialResults.innerHTML = `<div class="p-3 text-xs text-gray-500 text-center">No encontrado</div>`;
     } else {
         items.forEach(item => {
             const div = document.createElement('div');
-            div.className = "p-3 hover:bg-gray-800 cursor-pointer border-b border-gray-700 last:border-0 transition flex items-center gap-3 group";
+            div.className = "p-2 hover:bg-gray-800 cursor-pointer border-b border-gray-700 flex items-center gap-2";
             
-            // Imagen miniatura en la lista
-            const imgHtml = item.imageUrl 
-                ? `<img src="${item.imageUrl}" class="w-8 h-8 rounded object-cover border border-gray-600 group-hover:border-soriano-gold">`
-                : `<div class="w-8 h-8 rounded bg-gray-700 flex items-center justify-center text-gray-500 text-[10px]"><i class="fas fa-box"></i></div>`;
-
             div.innerHTML = `
-                ${imgHtml}
                 <div class="flex-1">
-                    <div class="flex justify-between items-center">
-                        <span class="text-sm text-white font-bold group-hover:text-soriano-gold transition">${item.name}</span>
-                        <span class="text-[10px] bg-gray-700 text-gray-300 px-1.5 py-0.5 rounded border border-gray-600">Stock: ${item.quantity}</span>
-                    </div>
-                    <div class="text-[10px] text-gray-500 font-mono mt-0.5 flex justify-between">
-                        <span>SKU: ${item.sku || 'N/A'}</span>
-                        <span>${item.unit}</span>
-                    </div>
+                    <div class="text-sm font-bold text-white">${item.name}</div>
+                    <div class="text-[10px] text-gray-400 font-mono">Stock: ${item.quantity} ${item.unit} | Costo: ${cop.format(item.cost)}</div>
                 </div>
             `;
+            
             div.onclick = () => selectMaterial(item);
             materialResults.appendChild(div);
         });
@@ -296,107 +304,109 @@ function renderSearchResults(items) {
     materialResults.classList.remove('hidden');
 }
 
-// D. Eventos del Buscador
-materialSearch.addEventListener('input', (e) => {
-    const term = e.target.value.toLowerCase();
-    if (term.length < 1) {
-        renderSearchResults(inventoryCache.slice(0, 5)); // Mostrar sugerencias recientes/top si está vacío
-        return;
-    }
-    const filtered = inventoryCache.filter(i => 
-        i.name.toLowerCase().includes(term) || 
-        (i.sku && i.sku.toLowerCase().includes(term))
-    );
-    renderSearchResults(filtered);
-});
-
-// ABRIR AL PRESIONAR (FOCUS)
-materialSearch.addEventListener('focus', () => {
-    // Si no hay texto, mostrar los primeros 10 items como sugerencia
-    if(!materialSearch.value) {
-        renderSearchResults(inventoryCache.slice(0, 10));
-    } else {
-        // Si hay texto, disparar el evento input para filtrar
-        materialSearch.dispatchEvent(new Event('input'));
-    }
-});
-
-// Ocultar resultados si hago click fuera
-document.addEventListener('click', (e) => {
-    // Si el click NO fue en el input NI en los resultados
-    if (!materialSearch.contains(e.target) && !materialResults.contains(e.target)) {
-        materialResults.classList.add('hidden');
-    }
-});
-
-// E. Selección de Material
+// D. Seleccionar Material
 function selectMaterial(item) {
+    // 1. Llenar campos ocultos y visibles
+    materialSearch.value = item.name;
     selectedMaterialId.value = item.id;
-    selectedMaterialName.textContent = item.name;
-    useUnitInput.value = item.unit;
+    selectedMaterialCost.value = item.cost || 0;
+    addMatCostDisplay.value = cop.format(item.cost || 0);
     
-    // Actualizar Stock en UI
-    if(selectedStockDisplay) selectedStockDisplay.textContent = `Stock: ${item.quantity} ${item.unit}`;
-    
-    // Manejo de Imagen Grande
-    if (item.imageUrl) {
-        selectedMaterialImage.src = item.imageUrl;
-        selectedMaterialImage.classList.remove('hidden');
-        selectedMaterialIcon.classList.add('hidden');
-    } else {
-        selectedMaterialImage.src = "";
-        selectedMaterialImage.classList.add('hidden');
-        selectedMaterialIcon.classList.remove('hidden');
+    // 2. MOSTRAR EL STOCK (Funcionalidad Recuperada)
+    if (stockDisplay) {
+        stockDisplay.textContent = `Disp: ${item.quantity} ${item.unit || ''}`;
+        stockDisplay.classList.remove('text-red-500');
+        stockDisplay.classList.add('text-green-500');
+        
+        // Alerta visual si hay poco stock
+        if(item.quantity <= 0) {
+            stockDisplay.textContent = "Sin Stock";
+            stockDisplay.classList.replace('text-green-500', 'text-red-500');
+        }
     }
 
-    // Configurar input
-    useQtyInput.max = item.quantity;
-    useQtyInput.value = "";
-    
-    // UI Toggle: Ocultar buscador, mostrar selección
-    materialSearch.value = "";
+    // 3. Configurar input cantidad
+    addMatQty.value = "";
+    addMatQty.max = item.quantity; 
+    addMatQty.focus();
+
+    // 4. Ocultar lista
     materialResults.classList.add('hidden');
-    searchContainer.classList.add('hidden'); // Ocultar input buscador
-    selectedMaterialDisplay.classList.remove('hidden');
-    selectedMaterialDisplay.classList.add('flex');
-    
-    setTimeout(() => useQtyInput.focus(), 100);
 }
 
-window.clearMaterialSelection = () => {
-    selectedMaterialId.value = "";
-    selectedMaterialName.textContent = "";
-    useUnitInput.value = "";
-    
-    // Reset Imagen
-    selectedMaterialImage.src = "";
-    
-    // UI Toggle: Mostrar buscador, ocultar selección
-    selectedMaterialDisplay.classList.add('hidden');
-    selectedMaterialDisplay.classList.remove('flex');
-    searchContainer.classList.remove('hidden'); // Mostrar input buscador nuevamente
-    
-    materialSearch.focus(); // Volver foco al buscador
-};
+// E. Guardar Material (Submit)
+addMaterialForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
 
-// UI Modales
-window.openMaterialModal = () => {
+    const matId = selectedMaterialId.value;
+    const qty = parseFloat(addMatQty.value);
+    const unitCost = parseFloat(selectedMaterialCost.value || 0);
+
+    // Validaciones
+    if (!matId) { alert("Error: Selecciona un material válido de la lista."); return; }
+    if (!qty || qty <= 0) { alert("Cantidad inválida."); return; }
+
+    try {
+        await runTransaction(db, async (transaction) => {
+            const orderRef = doc(db, "orders", orderId);
+            const inventoryRef = doc(db, "inventory", matId);
+
+            // 1. Validar Stock en tiempo real
+            const invDoc = await transaction.get(inventoryRef);
+            if (!invDoc.exists()) throw "Material no existe.";
+            
+            const currentQty = parseFloat(invDoc.data().quantity || 0);
+            if (currentQty < qty) throw `Stock insuficiente. Disponible: ${currentQty}`;
+
+            // 2. Descontar Inventario
+            transaction.update(inventoryRef, { quantity: currentQty - qty });
+
+            // 3. Agregar a Orden
+            const newMaterialItem = {
+                materialId: matId,
+                name: materialSearch.value,
+                qty: qty,
+                unit: invDoc.data().unit || 'und',
+                cost: unitCost,
+                total: unitCost * qty,
+                addedAt: new Date().toISOString()
+            };
+
+            transaction.update(orderRef, {
+                materials: arrayUnion(newMaterialItem)
+            });
+        });
+
+        alert("Material agregado correctamente.");
+        window.closeAddMatModal();
+        loadOrderDetails(); 
+        loadInventoryMaterials(); // Actualizar caché de stock
+
+    } catch (error) {
+        console.error("Error:", error);
+        alert("Error: " + error);
+    }
+});
+
+// --- FUNCIONES GLOBALES (ACCESIBLES DESDE HTML) ---
+
+window.openAddMatModal = () => {
     addMaterialForm.reset();
-    clearMaterialSelection();
-    
-    // Mostrar modal
+    selectedMaterialId.value = "";
+    selectedMaterialCost.value = "";
+    if(stockDisplay) stockDisplay.textContent = ""; // Limpiar stock anterior
+    materialResults.classList.add('hidden');
     materialModal.classList.remove('hidden'); 
     materialModal.classList.add('flex');
-    
-    // Asegurar que el input sea visible
-    searchContainer.classList.remove('hidden');
-    
-    // CORRECCIÓN: Eliminamos el 'materialSearch.focus()' automático.
-    // Ahora el usuario debe tocar el input manualmente para que se despliegue la lista.
+    setTimeout(() => materialSearch.focus(), 100);
 };
-window.closeMaterialModal = () => { materialModal.classList.add('hidden'); materialModal.classList.remove('flex'); };
 
-// --- 4. PAGOS ---
+window.closeAddMatModal = () => { 
+    materialModal.classList.add('hidden'); 
+    materialModal.classList.remove('flex'); 
+};
+
+// --- PAGOS ---
 async function loadAccountsForPayment() {
     const q = query(collection(db, "accounts"), where("status", "==", "active"));
     const snap = await getDocs(q);
@@ -405,7 +415,6 @@ async function loadAccountsForPayment() {
         payAccount.appendChild(new Option(d.data().name, d.id));
     });
 }
-// ... (El resto de la lógica de pagos se mantiene igual, ya funcionaba) ...
 
 window.openPayModal = () => {
     payForm.reset();
@@ -415,9 +424,18 @@ window.openPayModal = () => {
     payAmount.value = cop.format(debt); 
     payModal.classList.remove('hidden'); payModal.classList.add('flex');
 };
-window.closePayModal = () => { payModal.classList.add('hidden'); payModal.classList.remove('flex'); };
-window.formatCurrencyInput = (i) => { let v = i.value.replace(/\D/g, ''); i.value = v ? cop.format(parseInt(v)) : ''; };
 
+window.closePayModal = () => { 
+    payModal.classList.add('hidden'); 
+    payModal.classList.remove('flex'); 
+};
+
+window.formatCurrencyInput = (i) => { 
+    let v = i.value.replace(/\D/g, ''); 
+    i.value = v ? cop.format(parseInt(v)) : ''; 
+};
+
+// Registrar Pago
 payForm.addEventListener('submit', async (e) => {
     e.preventDefault();
     const rawAmt = payAmount.value.replace(/\D/g, '');
@@ -443,13 +461,13 @@ payForm.addEventListener('submit', async (e) => {
         });
 
         await batch.commit();
-        closePayModal();
+        window.closePayModal();
         loadOrderDetails();
         alert("Pago registrado.");
     } catch (e) { console.error(e); alert("Error al registrar pago"); }
 });
 
-// STATUS UPDATE
+// Actualizar Estado
 updateStatusBtn.addEventListener('click', async () => {
     const newStatus = statusSelect.value;
     updateStatusBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
@@ -460,5 +478,5 @@ updateStatusBtn.addEventListener('click', async () => {
         orderStatusBadge.textContent = statusLabels[newStatus] || newStatus;
         updateStatusBtn.innerHTML = '<i class="fas fa-check text-green-500"></i>';
         setTimeout(() => updateStatusBtn.innerHTML = '<i class="fas fa-save"></i>', 2000);
-    } catch (e) { alert("Error updating status"); updateStatusBtn.innerHTML = '<i class="fas fa-save"></i>'; }
+    } catch (e) { alert("Error actualizando estado"); updateStatusBtn.innerHTML = '<i class="fas fa-save"></i>'; }
 });

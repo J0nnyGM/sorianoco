@@ -100,5 +100,11 @@ service cloud.firestore {
       allow create: if isAdmin();  // Solo el admin crea el contador inicial (si no existe)
     }
 
+    // 11. FACTURAS / DEUDAS DE PROVEEDORES (AQUÍ ESTABA EL ERROR)
+    match /supplier_bills/{billId} {
+      allow read: if isActive();
+      allow write: if isContabilidad();
+    }
+
   }
 }

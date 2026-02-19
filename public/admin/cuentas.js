@@ -69,7 +69,7 @@ function subscribeAccounts() {
     onSnapshot(q, (snapshot) => {
         accountsCache = [];
         if (snapshot.empty) {
-            grid.innerHTML = `<div class="col-span-full text-center text-gray-500 py-10">No hay cuentas activas.</div>`;
+            grid.innerHTML = `<div class="col-span-full text-center text-gray-500 py-10 italic">No hay cuentas activas. Utilice el botón "Nueva Cuenta" para comenzar.</div>`;
             return;
         }
         
@@ -84,12 +84,11 @@ function subscribeAccounts() {
 
             if(data.type === 'banco') { 
                 icon = 'fa-university'; color = 'text-blue-400'; 
-                // Ej: BANCO (Ahorros) | # 123... | Llave: ABC
                 details = `
                     <div class="flex flex-col gap-1">
-                        <span class="uppercase font-bold text-xs">BANCO <span class="text-gray-400 font-normal">(${data.subtype || '-'})</span></span>
-                        <span class="text-gray-400 text-[10px]"># ${data.accountNumber}</span>
-                        ${data.accountKey ? `<span class="text-soriano-gold text-[10px]">Llave: ${data.accountKey}</span>` : ''}
+                        <span class="uppercase font-bold text-[10px] tracking-widest text-gray-400">BANCO <span class="font-normal">(${data.subtype || '-'})</span></span>
+                        <span class="text-white text-xs font-mono"># ${data.accountNumber}</span>
+                        ${data.accountKey ? `<span class="text-soriano-gold text-[10px] font-mono mt-0.5">ID: ${data.accountKey}</span>` : ''}
                     </div>
                 `;
             }
@@ -97,40 +96,48 @@ function subscribeAccounts() {
                 icon = 'fa-mobile-alt'; color = 'text-pink-500'; 
                 details = `
                     <div class="flex flex-col gap-1">
-                        <span class="uppercase font-bold text-xs">BILLETERA</span>
-                        <span class="text-gray-400 text-[10px]">Cel: ${data.accountNumber}</span>
-                        ${data.accountKey ? `<span class="text-soriano-gold text-[10px]">Llave: ${data.accountKey}</span>` : ''}
+                        <span class="uppercase font-bold text-[10px] tracking-widest text-gray-400">BILLETERA VIRTUAL</span>
+                        <span class="text-white text-xs font-mono">Cel: ${data.accountNumber}</span>
+                        ${data.accountKey ? `<span class="text-soriano-gold text-[10px] font-mono mt-0.5">Llave: ${data.accountKey}</span>` : ''}
                     </div>
                 `;
             }
             if(data.type === 'efectivo') { 
                 icon = 'fa-money-bill-wave'; color = 'text-green-500'; 
-                details = `<span class="uppercase font-bold text-green-400 text-xs">CAJA FÍSICA</span>`;
+                details = `<span class="uppercase font-bold text-[10px] tracking-widest text-green-400">CAJA FÍSICA / MENOR</span>`;
             }
 
-            const taxBadge = data.isTaxable ? '<span class="ml-2 px-2 py-0.5 rounded bg-red-900/40 text-red-400 text-[10px] border border-red-900">4x1000</span>' : '';
-            const qrThumb = data.qrUrl ? `<img src="${data.qrUrl}" class="w-8 h-8 rounded border border-gray-600 object-cover ml-auto cursor-pointer hover:scale-150 transition shadow-lg" onclick="window.open('${data.qrUrl}')" title="Ver QR">` : '';
+            const taxBadge = data.isTaxable ? '<span class="ml-3 px-2 py-0.5 rounded bg-red-900/30 text-red-400 text-[9px] uppercase font-bold tracking-widest border border-red-900">4x1000</span>' : '';
+            const qrThumb = data.qrUrl ? `<img src="${data.qrUrl}" class="w-8 h-8 rounded-lg border border-gray-700 object-cover cursor-pointer hover:scale-150 transition shadow-lg" onclick="window.open('${data.qrUrl}')" title="Ver Código QR">` : '';
             const dataStr = encodeURIComponent(JSON.stringify(data));
 
             return `
-                <div class="bg-gray-900 border border-gray-800 rounded-lg p-6 hover:border-gray-600 transition shadow-lg relative group flex flex-col justify-between">
+                <div class="bg-[#121214] border border-gray-800 rounded-2xl p-6 shadow-2xl relative flex flex-col justify-between overflow-hidden">
+                    <div class="absolute top-0 right-0 w-24 h-24 bg-gradient-to-br from-gray-500/5 to-transparent rounded-bl-full pointer-events-none"></div>
+                    
                     <div>
-                        <div class="flex justify-between items-start mb-4">
-                            <div class="p-3 bg-gray-800 rounded-lg ${color} text-xl shadow-inner">
+                        <div class="flex justify-between items-start mb-6 relative z-10">
+                            <div class="w-12 h-12 bg-gray-800 border border-gray-700 rounded-xl flex items-center justify-center text-xl shadow-inner ${color}">
                                 <i class="fas ${icon}"></i>
                             </div>
                             <div class="flex space-x-2 items-center">
                                 ${qrThumb}
-                                <button onclick="window.openModal('${doc.id}', '${dataStr}')" class="text-gray-500 hover:text-white transition p-2 hover:bg-gray-800 rounded"><i class="fas fa-pencil-alt"></i></button>
-                                <button onclick="window.archiveAccount('${doc.id}', '${data.balance}')" class="text-gray-600 hover:text-orange-500 transition opacity-0 group-hover:opacity-100 p-2 hover:bg-gray-800 rounded"><i class="fas fa-archive"></i></button>
+                                <button onclick="window.openModal('${doc.id}', '${dataStr}')" class="w-8 h-8 rounded-full bg-gray-800 text-gray-400 hover:text-white hover:bg-soriano-gold transition flex items-center justify-center border border-gray-700" title="Editar Cuenta"><i class="fas fa-pencil-alt text-xs"></i></button>
+                                <button onclick="window.archiveAccount('${doc.id}', '${data.balance}')" class="w-8 h-8 rounded-full bg-gray-800 text-gray-400 hover:text-white hover:bg-orange-500 transition flex items-center justify-center border border-gray-700" title="Archivar Cuenta"><i class="fas fa-archive text-xs"></i></button>
                             </div>
                         </div>
-                        <h3 class="text-lg font-bold text-white mb-2 flex items-center">${data.name} ${taxBadge}</h3>
-                        <div class="mb-4 font-mono">${details}</div>
+                        
+                        <h3 class="text-lg font-serif font-bold text-white mb-3 flex items-center">${data.name} ${taxBadge}</h3>
+                        <div class="mb-6">${details}</div>
                     </div>
-                    <div>
-                        <div class="text-2xl font-mono text-white border-t border-gray-800 pt-4 mb-3">${copFormatter.format(data.balance)}</div>
-                        <button onclick="window.viewHistory('${doc.id}', '${data.name}')" class="w-full text-xs bg-gray-800 hover:bg-gray-700 text-gray-300 py-2 rounded transition border border-gray-700"><i class="fas fa-list-ul mr-2"></i> Ver Extracto</button>
+                    
+                    <div class="relative z-10">
+                        <p class="text-[9px] text-gray-500 uppercase font-bold tracking-widest mb-1">Saldo Disponible</p>
+                        <div class="text-3xl font-mono font-bold text-white mb-4">${copFormatter.format(data.balance)}</div>
+                        
+                        <button onclick="window.viewHistory('${doc.id}', '${data.name}')" class="w-full bg-gray-900 hover:bg-gray-800 text-gray-300 text-xs font-bold uppercase tracking-wider py-3 rounded-lg transition border border-gray-700 flex justify-center items-center">
+                            <i class="fas fa-list-ul mr-2"></i> Ver Extracto
+                        </button>
                     </div>
                 </div>
             `;
